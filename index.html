@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central de Chamados - Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-brand-icon" id="login-icon-wrap"></div>
+      <div>
+        <h1>Central de Chamados</h1>
+        <span>Painel Administrativo</span>
+      </div>
+    </div>
+    <h2 class="login-title">Bem-vindo</h2>
+    <p class="login-sub">Acesse com suas credenciais de administrador</p>
+    <div class="field">
+      <label class="field-label">E-mail</label>
+      <div class="field-input-wrap">
+        <span class="field-input-icon" id="login-mail-icon"></span>
+        <input type="email" id="login-email" placeholder="admin@central.com" autocomplete="email"
+          onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Senha</label>
+      <div class="field-input-wrap">
+        <span class="field-input-icon" id="login-lock-icon"></span>
+        <input type="password" id="login-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" id="login-btn" onclick="doLogin()" style="margin-top:4px;padding:11px">
+      <span id="login-btn-text">Entrar</span>
+    </button>
+    <div id="login-error"></div>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:20px">
+      Acesso restrito a usu&aacute;rios cadastrados no sistema
+    </p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon" id="brand-icon-wrap"></div>
+      <div class="brand-text"><h2>Central</h2><p>de Chamados</p></div>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-group-label">Principal</span>
+      <div class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard')">
+        <span class="nav-icon" id="ni-dashboard"></span> Dashboard
+      </div>
+      <div class="nav-item" id="nav-chamados" onclick="navigate('chamados')">
+        <span class="nav-icon" id="ni-chamados"></span> Chamados
+        <span class="nav-badge" id="badge-novos">0</span>
+      </div>
+      <div class="nav-item" id="nav-novo-chamado" onclick="navigate('novo-chamado')">
+        <span class="nav-icon" id="ni-novo-chamado"></span> Novo Chamado
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-group-label">An&aacute;lise</span>
+      <div class="nav-item" id="nav-relatorios" onclick="navigate('relatorios')" style="display:none">
+        <span class="nav-icon" id="ni-relatorios"></span> Relat&oacute;rios
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-group-label">Administra&ccedil;&atilde;o</span>
+      <div class="nav-item" id="nav-usuarios" onclick="navigate('usuarios')" style="display:none">
+        <span class="nav-icon" id="ni-usuarios"></span> Usu&aacute;rios
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-group-label">Supervisor</span>
+      <div class="nav-item" id="nav-supervisor" onclick="navigate('supervisor')" style="display:none">
+        <span class="nav-icon" id="ni-supervisor"></span> Minha Equipe
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-group-label">Conta</span>
+      <div class="nav-item" id="nav-perfil" onclick="navigate('perfil')">
+        <span class="nav-icon" id="ni-perfil"></span> Meu Perfil
+      </div>
+      <div class="nav-item" id="nav-configuracoes" onclick="navigate('configuracoes')">
+        <span class="nav-icon" id="ni-configuracoes"></span> Configura&ccedil;&otilde;es
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info-wrap">
+          <div class="user-info-name" id="user-name">Carregando...</div>
+          <div class="user-info-role" id="user-role">&mdash;</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">
+        <span id="logout-icon"></span> Sair do sistema
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" onclick="toggleSidebar()" id="menu-toggle-btn"></button>
+        <div>
+          <div class="page-title" id="page-title">Dashboard</div>
+          <div class="page-sub"   id="page-sub">Vis&atilde;o geral do sistema</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" id="refresh-btn" onclick="refreshData()">
+          <span id="refresh-icon"></span> Atualizar
+        </button>
+        <div id="notif-wrap">
+          <button class="notif-bell" id="notif-bell-btn" onclick="Notif.togglePanel()">
+            <span id="bell-icon"></span>
+            <span id="notif-bell-dot"></span>
+          </button>
+          <div class="notif-panel" id="notif-panel">
+            <div class="notif-panel-header">
+              <span>Notifica&ccedil;&otilde;es</span>
+              <button class="notif-panel-clear" onclick="Notif.clearAll()">Limpar tudo</button>
+            </div>
+            <div id="notif-panel-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: DASHBOARD -->
+    <div data-page id="page-dashboard" class="page-content">
+      <div class="metrics-grid" id="metrics-grid"></div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Chamados por Status</div><div class="chart-sub">Distribui&ccedil;&atilde;o atual</div></div></div>
+          <div class="chart-wrap"><canvas id="chart-status"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Chamados por Prioridade</div><div class="chart-sub">Volume por criticidade</div></div></div>
+          <div class="chart-wrap"><canvas id="chart-prioridade"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Tend&ecirc;ncia &mdash; 7 dias</div><div class="chart-sub">Abertura di&aacute;ria</div></div></div>
+          <div class="chart-wrap"><canvas id="chart-tendencia"></canvas></div>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <span class="table-toolbar-title">Chamados Recentes</span>
+          <button class="btn btn-ghost btn-sm" onclick="navigate('chamados')">Ver todos <span id="rec-arrow"></span></button>
+        </div>
+        <table>
+          <thead><tr><th>Protocolo</th><th>Assunto</th><th>Empresa / Cliente</th><th>Prioridade</th><th>Status</th><th>Abertura</th></tr></thead>
+          <tbody id="recent-tbody"><tr><td colspan="6" class="loading-cell"><span class="spinner"></span></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAGE: CHAMADOS -->
+    <div data-page id="page-chamados" class="page-content" style="display:none">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <span class="table-toolbar-title">Todos os Chamados</span>
+          <span id="filter-summary"></span>
+          <div class="inp-wrap">
+            <span class="inp-icon" id="search-icon-el"></span>
+            <input type="text" class="inp inp-search" id="search-input"
+              placeholder="Buscar protocolo, assunto, empresa, cliente..." style="width:280px" oninput="filterChamados()">
+          </div>
+          <select class="inp" id="filter-status" onchange="filterChamados()" style="width:160px">
+            <option value="">Todos os status</option>
+            <option>Novo</option><option>Em An&aacute;lise</option><option>Em Atendimento</option>
+            <option>Pendente Cliente</option><option>Resolvido</option><option>Cancelado</option>
+          </select>
+          <select class="inp" id="filter-prioridade" onchange="filterChamados()" style="width:140px">
+            <option value="">Todas as prioridades</option>
+            <option value="1">Baixa</option><option value="2">M&eacute;dia</option>
+            <option value="3">Alta</option><option value="4">Cr&iacute;tica</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="clearFilters()" title="Limpar filtros">
+            <span id="clear-icon-el"></span>
+          </button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="protocolo"    onclick="sortBy('protocolo')">Protocolo <span class="sort-icon" id="sort-protocolo"></span></th>
+              <th data-sort="assunto"      onclick="sortBy('assunto')">Assunto <span class="sort-icon" id="sort-assunto"></span></th>
+              <th data-sort="empresa"      onclick="sortBy('empresa')">Empresa <span class="sort-icon" id="sort-empresa"></span></th>
+              <th data-sort="prioridade_id"onclick="sortBy('prioridade_id')">Prioridade <span class="sort-icon" id="sort-prioridade_id"></span></th>
+              <th data-sort="status"       onclick="sortBy('status')">Status <span class="sort-icon" id="sort-status"></span></th>
+              <th data-sort="data_abertura"onclick="sortBy('data_abertura')">Abertura <span class="sort-icon" id="sort-data_abertura"></span></th>
+              <th>SLA</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="chamados-tbody"><tr><td colspan="8" class="loading-cell"><span class="spinner"></span></td></tr></tbody>
+        </table>
+        <div class="pagination" id="pagination-wrapper">
+          <span id="pagination-info" style="color:var(--text-muted);font-size:12px">&mdash;</span>
+          <div class="pagination-btns" id="pagination-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: NOVO CHAMADO -->
+    <div data-page id="page-novo-chamado" class="page-content" style="display:none">
+      <div id="novo-chamado-content">
+        <div style="text-align:center;padding:60px"><span class="spinner"></span></div>
+      </div>
+    </div>
+
+    <!-- PAGE: RELATORIOS -->
+    <div data-page id="page-relatorios" class="page-content" style="display:none">
+      <div id="relatorios-content"><div style="text-align:center;padding:80px"><span class="spinner"></span></div></div>
+    </div>
+
+    <!-- PAGE: USUARIOS -->
+    <div data-page id="page-usuarios" class="page-content" style="display:none">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <span class="table-toolbar-title">Usuários do Sistema</span>
+          <button class="btn btn-primary btn-sm" onclick="openNovoUsuario()">
+            <span id="plus-icon-el"></span> Novo Usuário
+          </button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>Cargo</th>
+              <th>Departamento</th>
+              <th>Status</th>
+              <th>Cadastrado em</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="usuarios-tbody">
+            <tr><td colspan="6" class="loading-cell"><span class="spinner"></span> Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAGE: SUPERVISOR -->
+    <div data-page id="page-supervisor" class="page-content" style="display:none">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <span class="table-toolbar-title">Minha Equipe</span>
+          <span id="supervisor-depto-badge" style="font-size:12px;background:var(--accent-glow);padding:4px 10px;border-radius:20px"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>Cargo</th>
+              <th>Departamento</th>
+              <th>Status</th>
+              <th>Cadastrado em</th>
+            </tr>
+          </thead>
+          <tbody id="supervisor-usuarios-tbody">
+            <tr><td colspan="5" class="loading-cell"><span class="spinner"></span> Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAGE: PERFIL -->
+    <div data-page id="page-perfil" class="page-content" style="display:none">
+      <div id="perfil-content"><div style="text-align:center;padding:60px"><span class="spinner"></span></div></div>
+    </div>
+
+    <!-- PAGE: CONFIGURACOES -->
+    <div data-page id="page-configuracoes" class="page-content" style="display:none">
+      <div id="configuracoes-content"><div style="text-align:center;padding:60px"><span class="spinner"></span></div></div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: DETALHE CHAMADO -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalIfOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title" id="modal-title">Carregando...</div>
+        <div class="modal-proto" id="modal-proto"></div>
+      </div>
+      <div class="modal-header-right">
+        <span id="modal-status-badge"></span>
+        <button class="modal-close" onclick="closeModal()" title="Fechar"></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-main">
+        <div class="tab-row">
+          <button class="tab-btn active" data-tab="msgs"      onclick="switchTab('msgs')"><span id="tab-icon-msg"></span> Mensagens</button>
+          <button class="tab-btn"        data-tab="historico" onclick="switchTab('historico')"><span id="tab-icon-hist"></span> Hist&oacute;rico</button>
+        </div>
+        <div id="tab-msgs" style="display:flex;flex-direction:column;gap:12px;flex:1">
+          <div class="msg-list" id="msg-list"></div>
+          <div id="reply-section">
+            <textarea id="reply-text" placeholder="Escreva sua resposta..."></textarea>
+            <div><button class="btn btn-primary btn-sm" id="send-reply-btn" onclick="sendReply()"><span id="send-icon"></span> Enviar Resposta</button></div>
+          </div>
+        </div>
+        <div id="tab-historico" style="display:none"><div id="historico-list"></div></div>
+      </div>
+      <div class="modal-side">
+        <div><div class="section-title"><span id="side-client-icon"></span> Cliente</div><div class="info-group" id="client-info"></div></div>
+        <div><div class="section-title"><span id="side-ticket-icon"></span> Chamado</div><div class="info-group" id="chamado-info"></div></div>
+        <div id="actions-status-section">
+          <div class="section-title"><span id="side-status-icon"></span> Alterar Status</div>
+          <div class="action-section">
+            <select class="action-sel" id="new-status">
+              <option value="">Selecionar status...</option>
+              <option>Novo</option><option>Em An&aacute;lise</option><option>Em Atendimento</option>
+              <option>Pendente Cliente</option><option>Resolvido</option><option>Cancelado</option>
+            </select>
+            <button class="btn btn-secondary btn-sm btn-full" id="change-status-btn" onclick="changeStatus()">
+              <span id="change-status-icon"></span> Aplicar Status
+            </button>
+          </div>
+        </div>
+        <div id="actions-prioridade-section">
+          <div class="section-title"><span id="side-prio-icon"></span> Alterar Prioridade</div>
+          <div class="action-section">
+            <select class="action-sel" id="new-prioridade">
+              <option value="">Selecionar prioridade...</option>
+              <option value="1">Baixa</option><option value="2">M&eacute;dia</option>
+              <option value="3">Alta</option><option value="4">Cr&iacute;tica</option>
+            </select>
+            <textarea id="justificativa-prioridade" placeholder="Justificativa obrigat&oacute;ria..."></textarea>
+            <button class="btn btn-secondary btn-sm btn-full" id="change-prio-btn" onclick="changePrioridade()">
+              <span id="change-prio-icon"></span> Aplicar Prioridade
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMAR -->
+<div id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon-el"></div>
+    <div class="confirm-title"   id="confirm-title">Confirmar</div>
+    <div class="confirm-message" id="confirm-message" style="white-space:pre-line">Tem certeza?</div>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close(false)">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="confirm-ok" onclick="Modal.close(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITAR USUARIO -->
+<div id="edit-user-modal">
+  <div class="small-modal">
+    <div class="small-modal-title"><span id="edit-user-title-icon"></span> Editar Usuário</div>
+    <input type="hidden" id="edit-user-id">
+    <div class="field" style="margin-bottom:14px">
+      <label class="field-label">Nome</label>
+      <input type="text" class="no-icon" id="edit-user-nome" placeholder="Nome completo">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label class="field-label">E-mail</label>
+      <input type="email" class="no-icon" id="edit-user-email" disabled style="opacity:.5;cursor:not-allowed">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label class="field-label">Cargo / Permissão</label>
+      <select id="edit-user-cargo" class="no-icon">
+        <option value="Funcionario">Funcionário</option>
+        <option value="Atendente">Atendente</option>
+        <option value="Supervisor">Supervisor</option>
+        <option value="Administrador">Administrador</option>
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label class="field-label">Departamento</label>
+      <select id="edit-user-departamento" class="no-icon">
+        <option value="">Selecionar departamento...</option>
+        <option value="1">Financeiro</option>
+        <option value="2">Recursos Humanos</option>
+        <option value="3">Tecnologia da Informação</option>
+        <option value="4">Suprimentos</option>
+        <option value="5">Administrativo</option>
+        <option value="6">Jurídico</option>
+        <option value="7">Geral</option>
+      </select>
+    </div>
+    <div class="small-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeEditUserModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveEditUsuario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO USUARIO -->
+<div id="new-user-modal">
+  <div class="small-modal">
+    <div class="small-modal-title"><span id="new-user-title-icon"></span> Novo Usu&aacute;rio</div>
+    <div class="field" style="margin-bottom:14px">
+      <label class="field-label">Nome</label>
+      <input type="text" class="no-icon" id="new-user-nome" placeholder="Nome completo">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label class="field-label">E-mail</label>
+      <input type="email" class="no-icon" id="new-user-email" placeholder="email@empresa.com">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label class="field-label">Cargo / Permiss&atilde;o</label>
+      <select id="new-user-cargo" class="no-icon">
+        <option value="Funcionario">Funcion&aacute;rio</option>
+        <option value="Atendente">Atendente</option>
+        <option value="Supervisor">Supervisor</option>
+        <option value="Administrador">Administrador</option>
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label class="field-label">Departamento</label>
+      <select id="new-user-departamento" class="no-icon">
+        <option value="">Selecionar departamento...</option>
+        <option value="1">Financeiro</option>
+        <option value="2">Recursos Humanos</option>
+        <option value="3">Tecnologia da Informação</option>
+        <option value="4">Suprimentos</option>
+        <option value="5">Administrativo</option>
+        <option value="6">Jurídico</option>
+        <option value="7">Geral</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;
+      background:#4f80e810;border:1px solid #4f80e825;border-radius:8px;
+      font-size:12px;color:var(--text-secondary);margin-bottom:4px">
+      <span style="color:var(--accent);flex-shrink:0;margin-top:1px" id="new-user-info-icon"></span>
+      <span>O usu&aacute;rio ser&aacute; criado com senha padr&atilde;o <strong style="color:var(--text-primary);font-family:'DM Mono',monospace">123456</strong>. Pe&ccedil;a para alterar no primeiro acesso em <em>Meu Perfil</em>.</span>
+    </div>
+    <div id="new-user-error" style="display:none;align-items:flex-start;gap:8px;
+      margin-top:10px;padding:10px 12px;
+      background:#f05b5b12;border:1px solid #f05b5b30;border-radius:8px;
+      font-size:12px;color:var(--red);white-space:pre-line"></div>
+    <div class="small-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeNewUserModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="save-new-user-btn" onclick="saveNovoUsuario()">Criar usu&aacute;rio</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO CLIENTE -->
+<div id="novo-cliente-modal" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:400;background:#000000a0;backdrop-filter:blur(4px);opacity:0;transition:opacity .2s">
+  <div class="small-modal" style="max-height:90vh;overflow-y:auto">
+    <div class="small-modal-title"><span id="nc-new-cliente-icon"></span> Novo Cliente</div>
+    <div class="field" style="margin-bottom:12px">
+      <label class="field-label">Nome *</label>
+      <input type="text" class="no-icon" id="nc-new-nome" placeholder="Nome completo do contato">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label class="field-label">Empresa *</label>
+      <input type="text" class="no-icon" id="nc-new-empresa" placeholder="Nome da empresa cliente">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label class="field-label">E-mail</label>
+      <input type="email" class="no-icon" id="nc-new-email" placeholder="email@empresa.com">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label class="field-label">Telefone</label>
+      <input type="text" class="no-icon" id="nc-new-tel" placeholder="(00) 00000-0000">
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label class="field-label">Departamento</label>
+      <select id="nc-new-depto-input" class="no-icon">
+        <option value="">Selecionar...</option>
+        <option>Financeiro</option><option>RH</option><option>TI</option>
+        <option>Suprimentos</option><option>Administrativo</option><option>Jur&iacute;dico</option><option>Geral</option>
+      </select>
+    </div>
+    <div id="nc-new-cliente-error" style="display:none;margin-top:10px;padding:8px 12px;
+      background:#f05b5b12;border:1px solid #f05b5b30;border-radius:7px;font-size:12px;color:var(--red)"></div>
+    <div class="small-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeNovoClienteModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveNovoCliente()">Criar cliente</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- SCRIPTS -->
+<script charset="UTF-8" src="js/icons.js"></script>
+<script charset="UTF-8" src="js/config.js"></script>
+<script charset="UTF-8" src="js/utils.js"></script>
+<script charset="UTF-8" src="js/notifications.js"></script>
+<script charset="UTF-8" src="js/auth.js"></script>
+<script charset="UTF-8" src="js/nav.js"></script>
+<script charset="UTF-8" src="js/page-dashboard.js"></script>
+<script charset="UTF-8" src="js/page-chamados.js"></script>
+<script charset="UTF-8" src="js/modal-chamado.js"></script>
+<script charset="UTF-8" src="js/page-relatorios.js"></script>
+<script charset="UTF-8" src="js/page-usuarios.js"></script>
+<script charset="UTF-8" src="js/page-supervisor.js"></script>
+<script charset="UTF-8" src="js/page-perfil.js"></script>
+<script charset="UTF-8" src="js/page-configuracoes.js"></script>
+<script charset="UTF-8" src="js/page-novo-chamado.js"></script>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('login-icon-wrap').innerHTML = Icons.get('headphone', 22);
+  document.getElementById('login-mail-icon').innerHTML = Icons.get('send', 14);
+  document.getElementById('login-lock-icon').innerHTML = Icons.get('lock', 14);
+  document.getElementById('login-btn-text').innerHTML  = Icons.get('arrowRight',15) + ' Entrar';
+
+  document.getElementById('brand-icon-wrap').innerHTML = Icons.get('headphone', 18);
+
+  document.getElementById('ni-dashboard').innerHTML     = Icons.get('dashboard',  16);
+  document.getElementById('ni-chamados').innerHTML      = Icons.get('ticket',     16);
+  document.getElementById('ni-novo-chamado').innerHTML  = Icons.get('plus',       16);
+  document.getElementById('ni-relatorios').innerHTML    = Icons.get('barChart',   16);
+  document.getElementById('ni-usuarios').innerHTML      = Icons.get('users',      16);
+  document.getElementById('ni-supervisor').innerHTML    = Icons.get('users',      16);
+  document.getElementById('ni-perfil').innerHTML        = Icons.get('user',       16);
+  document.getElementById('ni-configuracoes').innerHTML = Icons.get('settings',   16);
+
+  document.getElementById('menu-toggle-btn').innerHTML = Icons.get('menu',    18);
+  document.getElementById('refresh-icon').innerHTML    = Icons.get('refresh', 14);
+  document.getElementById('bell-icon').innerHTML       = Icons.get('bell',    16);
+  document.getElementById('rec-arrow').innerHTML       = Icons.get('arrowRight', 13);
+
+  document.getElementById('search-icon-el').innerHTML = Icons.get('search', 13);
+  document.getElementById('clear-icon-el').innerHTML  = Icons.get('x',      13);
+  document.getElementById('plus-icon-el').innerHTML   = Icons.get('plus', 13);
+
+  document.querySelector('.modal-close').innerHTML   = Icons.get('x',       14);
+  document.getElementById('tab-icon-msg').innerHTML  = Icons.get('message', 13);
+  document.getElementById('tab-icon-hist').innerHTML = Icons.get('report',  13);
+  document.getElementById('side-client-icon').innerHTML = Icons.get('user',        12);
+  document.getElementById('side-ticket-icon').innerHTML = Icons.get('ticket',      12);
+  document.getElementById('side-status-icon').innerHTML = Icons.get('activity',    12);
+  document.getElementById('side-prio-icon').innerHTML   = Icons.get('tag',         12);
+  document.getElementById('send-icon').innerHTML          = Icons.get('send',    14);
+  document.getElementById('change-status-icon').innerHTML = Icons.get('check',   13);
+  document.getElementById('change-prio-icon').innerHTML   = Icons.get('warning', 13);
+  document.getElementById('confirm-icon-el').innerHTML    = Icons.get('warning',  28);
+  document.getElementById('edit-user-title-icon').innerHTML = Icons.get('edit', 18);
+  document.getElementById('new-user-title-icon').innerHTML  = Icons.get('plus', 18);
+  document.getElementById('new-user-info-icon').innerHTML   = Icons.get('infoCircle', 14);
+  document.getElementById('nc-new-cliente-icon').innerHTML  = Icons.get('user', 18);
+  document.getElementById('logout-icon').innerHTML          = Icons.get('logout', 14);
+
+  document.querySelectorAll('.sort-icon').forEach(el => {
+    el.innerHTML = Icons.get('sort', 11);
+  });
+
+  checkSession();
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeModal();
+      Modal.close(false);
+      closeEditUserModal();
+      closeNewUserModal();
+      closeNovoClienteModal();
+    }
+  });
+});
+
+window.openNovoClienteModal = function() {
+  ['nc-new-nome','nc-new-empresa','nc-new-email','nc-new-tel'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  const deptEl = document.getElementById('nc-new-depto-input');
+  if (deptEl) deptEl.value = '';
+  const errEl = document.getElementById('nc-new-cliente-error');
+  if (errEl) errEl.style.display = 'none';
+  const ov = document.getElementById('novo-cliente-modal');
+  ov.style.display = 'flex';
+  requestAnimationFrame(() => { ov.style.opacity='1'; });
+};
+
+window.closeNovoClienteModal = function() {
+  const ov = document.getElementById('novo-cliente-modal');
+  ov.style.opacity = '0';
+  setTimeout(() => { ov.style.display = 'none'; }, 220);
+};
+
+document.getElementById('novo-cliente-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeNovoClienteModal();
+});
+</script>
+</body>
+</html>
