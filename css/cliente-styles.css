@@ -1,0 +1,276 @@
+/* ============================================================
+   cliente-styles.css — Estilos complementares do Portal do Cliente
+   NÃO afeta o portal do funcionário
+   ============================================================ */
+
+/* ── Seletor de tipo de login ───────────────────────────────── */
+.login-tipo-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.login-tipo-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  text-align: center;
+}
+
+.login-tipo-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: var(--accent-glow);
+}
+
+.login-tipo-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.login-tipo-btn .tipo-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  background: var(--bg-elevated);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+}
+
+.login-tipo-btn.active .tipo-icon {
+  background: var(--accent);
+  color: white;
+}
+
+/* ── App Cliente — estrutura ────────────────────────────────── */
+#app-cliente {
+  display: none;
+  min-height: 100vh;
+}
+
+#app-cliente .sidebar { --sidebar-w: 230px; }
+
+/* ── Badge de pendentes na sidebar (amarelo) ────────────────── */
+.cli-badge-pendentes {
+  display: none;
+  margin-left: auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #f0b429;
+  color: #1a1200;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── Badge inline na tabela ─────────────────────────────────── */
+.cli-badge-pendente-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: #f0b42920;
+  border: 1px solid #f0b42940;
+  color: #f0b429;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+/* ── Linha pendente na tabela ───────────────────────────────── */
+.cli-row-pendente {
+  background: #f0b4290a !important;
+  border-left: 2px solid #f0b42960;
+}
+
+/* ── Card do Atendente no modal ─────────────────────────────── */
+.cli-atendente-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-md);
+  border-radius: 10px;
+}
+
+.cli-atendente-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #6a5ae8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: white;
+  flex-shrink: 0;
+}
+
+.cli-atendente-nome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cli-atendente-role {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cli-atendente-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-md);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Modal do cliente ───────────────────────────────────────── */
+#cli-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity .25s;
+}
+
+#cli-modal-overlay.open { opacity: 1; }
+
+/* Tabs do modal cliente */
+.cli-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.cli-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.cli-tab-btn:hover:not(.active) {
+  color: var(--text-secondary);
+}
+
+/* ── Formulário do cliente (abrir chamado) ──────────────────── */
+.cli-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-md);
+  border-radius: 14px;
+  padding: 28px;
+}
+
+/* ── Empty state do portal cliente ─────────────────────────── */
+.cli-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.cli-empty-state p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.cli-empty-state .cli-empty-icon {
+  opacity: .4;
+}
+
+/* ── Animação de pulso para pendências ──────────────────────── */
+@keyframes cliPulsePendente {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 180, 41, .5); }
+  50%       { box-shadow: 0 0 0 6px rgba(240, 180, 41, 0); }
+}
+
+.cli-pendente-pulse {
+  animation: cliPulsePendente 2s infinite;
+}
+
+/* ── Métricas do cliente ────────────────────────────────────── */
+#cli-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  #cli-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 520px) {
+  #cli-metrics-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+/* ── Responsividade mobile específica do portal cliente ─────── */
+@media (max-width: 768px) {
+  .login-tipo-selector { gap: 8px; }
+  .login-tipo-btn { padding: 10px 8px; font-size: 11px; }
+  .login-tipo-btn .tipo-icon { width: 28px; height: 28px; }
+
+  #cli-modal-overlay .modal {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+}
+
+/* ── Tema claro — overrides para portal cliente ─────────────── */
+[data-theme="light"] .cli-badge-pendentes {
+  color: #8b6200;
+}
+
+[data-theme="light"] .login-tipo-btn {
+  background: #f5f7ff;
+  border-color: #d0d8ee;
+}
+
+[data-theme="light"] .login-tipo-btn.active {
+  background: #e8efff;
+}

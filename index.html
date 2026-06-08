@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/cliente-styles.css">
 </head>
 <body>
 
@@ -23,7 +24,18 @@
       </div>
     </div>
     <h2 class="login-title">Bem-vindo</h2>
-    <p class="login-sub">Acesse com suas credenciais de administrador</p>
+    <!-- Seletor de tipo de acesso -->
+    <div class="login-tipo-selector">
+      <button class="login-tipo-btn active" id="login-tipo-funcionario" onclick="selecionarTipoLogin('funcionario')">
+        <div class="tipo-icon" id="login-tipo-icon-func"></div>
+        <span>Sou Funcionário</span>
+      </button>
+      <button class="login-tipo-btn" id="login-tipo-cliente" onclick="selecionarTipoLogin('cliente')">
+        <div class="tipo-icon" id="login-tipo-icon-cli"></div>
+        <span>Sou Cliente</span>
+      </button>
+    </div>
+    <p class="login-sub" id="login-sub">Acesse com suas credenciais de administrador</p>
     <div class="field">
       <label class="field-label">E-mail</label>
       <div class="field-input-wrap">
@@ -300,7 +312,204 @@
   </main>
 </div>
 
-<!-- MODAL: DETALHE CHAMADO -->
+<!-- APP CLIENTE -->
+<div id="app-cliente">
+  <div class="sidebar-overlay" id="cli-sidebar-overlay" onclick="toggleClienteSidebar(false)"></div>
+
+  <!-- SIDEBAR CLIENTE -->
+  <aside class="sidebar" id="cli-sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon" id="cli-brand-icon-wrap"></div>
+      <div class="brand-text"><h2>Portal</h2><p>do Cliente</p></div>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-group-label">Chamados</span>
+      <div class="nav-item active cli-nav-item" id="cli-nav-meus-chamados" onclick="navigateCliente('meus-chamados')">
+        <span class="nav-icon" id="cli-ni-meus-chamados"></span> Meus Chamados
+        <span class="cli-badge-pendentes nav-badge" id="cli-badge-pendentes"></span>
+      </div>
+      <div class="nav-item cli-nav-item" id="cli-nav-abrir-chamado" onclick="navigateCliente('abrir-chamado')">
+        <span class="nav-icon" id="cli-ni-abrir-chamado"></span> Abrir Chamado
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-group-label">Conta</span>
+      <div class="nav-item cli-nav-item" id="cli-nav-cli-perfil" onclick="navigateCliente('cli-perfil')">
+        <span class="nav-icon" id="cli-ni-perfil"></span> Meu Perfil
+      </div>
+      <div class="nav-item cli-nav-item" id="cli-nav-cli-config" onclick="navigateCliente('cli-config')">
+        <span class="nav-icon" id="cli-ni-config"></span> Configurações
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar" id="cli-user-avatar">C</div>
+        <div class="user-info-wrap">
+          <div class="user-info-name" id="cli-user-name">Carregando...</div>
+          <div class="user-info-role" id="cli-user-role">&mdash;</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogoutCliente()">
+        <span id="cli-logout-icon"></span> Sair do portal
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CLIENTE -->
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" onclick="toggleClienteSidebar()" id="cli-menu-toggle-btn"></button>
+        <div>
+          <div class="page-title" id="cli-page-title">Meus Chamados</div>
+          <div class="page-sub"   id="cli-page-sub">Acompanhe seus chamados</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" onclick="refreshClienteData()">
+          <span id="cli-refresh-icon"></span> Atualizar
+        </button>
+      </div>
+    </div>
+
+    <!-- PAGE: MEUS CHAMADOS -->
+    <div data-cli-page id="cli-page-meus-chamados" class="page-content">
+      <div id="cli-metrics-grid"></div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <span class="table-toolbar-title">Meus Chamados</span>
+          <div class="inp-wrap">
+            <span class="inp-icon" id="cli-search-icon"></span>
+            <input type="text" class="inp inp-search" id="cli-search-input"
+              placeholder="Buscar protocolo, assunto..." style="width:240px"
+              oninput="_filterClienteChamados()">
+          </div>
+          <select class="inp" id="cli-filter-status" onchange="_filterClienteChamados()" style="width:160px">
+            <option value="">Todos os status</option>
+            <option>Novo</option>
+            <option>Em An&aacute;lise</option>
+            <option>Em Atendimento</option>
+            <option>Pendente Cliente</option>
+            <option>Resolvido</option>
+            <option>Cancelado</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="limparFiltrosCliente()" title="Limpar filtros">
+            <span id="cli-clear-icon"></span>
+          </button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Protocolo</th>
+              <th>Assunto</th>
+              <th>Status</th>
+              <th>Prioridade</th>
+              <th>Abertura</th>
+              <th>Responsável</th>
+            </tr>
+          </thead>
+          <tbody id="cli-chamados-tbody">
+            <tr><td colspan="6" class="loading-cell"><span class="spinner"></span> Carregando...</td></tr>
+          </tbody>
+        </table>
+        <div class="pagination" id="cli-pagination-wrapper">
+          <span id="cli-pagination-info" style="color:var(--text-muted);font-size:12px">&mdash;</span>
+          <div class="pagination-btns" id="cli-pagination-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: ABRIR CHAMADO -->
+    <div data-cli-page id="cli-page-abrir-chamado" class="page-content" style="display:none">
+      <div style="text-align:center;padding:60px"><span class="spinner"></span></div>
+    </div>
+
+    <!-- PAGE: PERFIL CLIENTE -->
+    <div data-cli-page id="cli-page-cli-perfil" class="page-content" style="display:none">
+      <div style="text-align:center;padding:60px"><span class="spinner"></span></div>
+    </div>
+
+    <!-- PAGE: CONFIG CLIENTE -->
+    <div data-cli-page id="cli-page-cli-config" class="page-content" style="display:none">
+      <div style="text-align:center;padding:60px"><span class="spinner"></span></div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL CHAMADO CLIENTE -->
+<div id="cli-modal-overlay" onclick="closeCliModalIfOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title" id="cli-modal-title">Carregando...</div>
+        <div class="modal-proto"  id="cli-modal-proto"></div>
+      </div>
+      <div class="modal-header-right">
+        <span id="cli-modal-status-badge"></span>
+        <button class="modal-close" onclick="closeCliModal()" title="Fechar" id="cli-modal-close-btn"></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-main">
+        <div class="tab-row">
+          <button class="cli-tab-btn active" data-tab="msgs" onclick="_switchCliTab('msgs')">
+            <span id="cli-tab-icon-msg"></span> Mensagens
+          </button>
+          <button class="cli-tab-btn" data-tab="info" onclick="_switchCliTab('info')">
+            <span id="cli-tab-icon-info"></span> Detalhes
+          </button>
+        </div>
+
+        <!-- Aba: Mensagens -->
+        <div id="cli-tab-msgs" style="display:flex;flex-direction:column;gap:12px;flex:1">
+          <div class="msg-list" id="cli-msg-list"></div>
+          <div id="cli-reply-section" style="display:flex;flex-direction:column;gap:8px">
+            <textarea id="cli-reply-text" placeholder="Escreva sua mensagem..."></textarea>
+            <div>
+              <button class="btn btn-primary btn-sm" id="cli-send-reply-btn" onclick="sendCliReply()">
+                <span id="cli-send-icon"></span> Enviar Mensagem
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aba: Detalhes (mobile) -->
+        <div id="cli-tab-info" style="display:none">
+          <div class="info-group" id="cli-chamado-info-mobile"></div>
+        </div>
+      </div>
+
+      <div class="modal-side">
+        <!-- Atendente -->
+        <div>
+          <div class="section-title">
+            <span id="cli-side-atend-icon"></span> Atendente
+          </div>
+          <div id="cli-responsavel-card"></div>
+        </div>
+        <!-- Dados do chamado -->
+        <div>
+          <div class="section-title">
+            <span id="cli-side-ticket-icon"></span> Chamado
+          </div>
+          <div class="info-group" id="cli-chamado-info"></div>
+        </div>
+        <!-- Aviso: cliente não pode alterar status -->
+        <div style="padding:10px 12px;background:var(--accent-glow);border:1px solid var(--border-md);
+          border-radius:9px;font-size:11px;color:var(--text-muted);line-height:1.6">
+          ${Icons.get ? '' : ''}
+          <span id="cli-side-info-icon"></span>
+          Para solicitar alteração de status ou prioridade, envie uma mensagem ao nosso time.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalIfOutside(event)">
   <div class="modal">
     <div class="modal-header">
@@ -525,12 +734,22 @@
 <script charset="UTF-8" src="js/page-configuracoes.js"></script>
 <script charset="UTF-8" src="js/page-novo-chamado.js"></script>
 
+<script charset="UTF-8" src="js/auth-cliente.js"></script>
+<script charset="UTF-8" src="js/portal-cliente.js"></script>
+<script charset="UTF-8" src="js/modal-chamado-cliente.js"></script>
+
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('login-icon-wrap').innerHTML = Icons.get('headphone', 22);
   document.getElementById('login-mail-icon').innerHTML = Icons.get('send', 14);
   document.getElementById('login-lock-icon').innerHTML = Icons.get('lock', 14);
   document.getElementById('login-btn-text').innerHTML  = Icons.get('arrowRight',15) + ' Entrar';
+
+  // Seletor de tipo de login
+  const tiFunc = document.getElementById('login-tipo-icon-func');
+  const tiCli  = document.getElementById('login-tipo-icon-cli');
+  if (tiFunc) tiFunc.innerHTML = Icons.get('shield', 18);
+  if (tiCli)  tiCli.innerHTML  = Icons.get('user',   18);
 
   document.getElementById('brand-icon-wrap').innerHTML = Icons.get('headphone', 18);
 
@@ -573,11 +792,38 @@ window.addEventListener('DOMContentLoaded', () => {
     el.innerHTML = Icons.get('sort', 11);
   });
 
+  // ── Ícones do Portal do Cliente ──────────────────────────────────────────
+  const setCliIcon = (id, icon, size = 16) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = Icons.get(icon, size);
+  };
+
+  setCliIcon('cli-brand-icon-wrap',    'user',       18);
+  setCliIcon('cli-ni-meus-chamados',   'ticket',     16);
+  setCliIcon('cli-ni-abrir-chamado',   'plus',       16);
+  setCliIcon('cli-ni-perfil',          'user',       16);
+  setCliIcon('cli-ni-config',          'settings',   16);
+  setCliIcon('cli-menu-toggle-btn',    'menu',       18);
+  setCliIcon('cli-refresh-icon',       'refresh',    14);
+  setCliIcon('cli-logout-icon',        'logout',     14);
+  setCliIcon('cli-search-icon',        'search',     13);
+  setCliIcon('cli-clear-icon',         'x',          13);
+
+  // Modal cliente
+  setCliIcon('cli-modal-close-btn',    'x',          14);
+  setCliIcon('cli-tab-icon-msg',       'message',    13);
+  setCliIcon('cli-tab-icon-info',      'ticket',     13);
+  setCliIcon('cli-send-icon',          'send',       14);
+  setCliIcon('cli-side-atend-icon',    'headphone',  12);
+  setCliIcon('cli-side-ticket-icon',   'ticket',     12);
+  setCliIcon('cli-side-info-icon',     'infoCircle', 12);
+
   checkSession();
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeModal();
+      closeCliModal();
       Modal.close(false);
       closeEditUserModal();
       closeNewUserModal();
