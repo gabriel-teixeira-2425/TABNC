@@ -577,6 +577,25 @@
             </button>
           </div>
         </div>
+        <!-- Redirecionar Setor — visível só para Administrador -->
+        <div id="actions-setor-section" style="display:none">
+          <div class="section-title"><span id="side-setor-icon"></span> Redirecionar Setor</div>
+          <div class="action-section">
+            <select class="action-sel" id="setor-select">
+              <option value="">— Selecionar setor —</option>
+              <option value="1">Financeiro</option>
+              <option value="2">RH</option>
+              <option value="3">TI</option>
+              <option value="4">Suprimentos</option>
+              <option value="5">Administrativo</option>
+              <option value="6">Jurídico</option>
+              <option value="7">Geral</option>
+            </select>
+            <button class="btn btn-secondary btn-sm btn-full" id="setor-btn" onclick="changeSetor()">
+              <span id="setor-btn-icon"></span> Redirecionar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

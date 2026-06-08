@@ -37,6 +37,7 @@ const PERMISSIONS = {
   // ERRO 2: só Supervisor (nível 3) pode reatribuir responsável
   chamado_assign:          3,
   chamado_delete:          4,
+  chamado_setor_change:    4,   // só Administrador pode redirecionar setor
 
   // Usuários
   user_view:          4,

@@ -33,6 +33,8 @@ async function openChamado(id) {
     loadHistorico(id);
     // ERRO 2: carrega painel de atribuição para Supervisor+
     if (can('chamado_assign')) _loadAssignPanel(ch);
+    // Pré-seleciona setor atual no select de redirecionar (ADM)
+    if (can('chamado_setor_change')) _loadSetorPanel(ch);
 
     document.getElementById('new-status').value      = ch.status || '';
     document.getElementById('new-prioridade').value  = ch.prioridade_id || '';
@@ -113,6 +115,9 @@ function _applyModalPermissions() {
   // ERRO 2: painel de reatribuição visível somente para Supervisor+
   const assignSection = document.getElementById('actions-assign-section');
   if (assignSection) assignSection.style.display = can('chamado_assign') ? 'block' : 'none';
+  // Redirecionar setor — somente Administrador
+  const setorSection = document.getElementById('actions-setor-section');
+  if (setorSection) setorSection.style.display = can('chamado_setor_change') ? 'block' : 'none';
 }
 
 async function loadMessages(chamadoId) {
@@ -379,6 +384,65 @@ async function assignResponsavel() {
     await openChamado(ch.id);
     silentRefresh();
   } catch(e) {
+    Notif.toast('Erro: ' + e.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ─── Redirecionar Setor (só Administrador) ────────────────────────────────────
+const _DEPTOS_MAP = {
+  1: 'Financeiro', 2: 'RH', 3: 'TI', 4: 'Suprimentos',
+  5: 'Administrativo', 6: 'Jurídico', 7: 'Geral',
+};
+
+function _loadSetorPanel(ch) {
+  const sel = document.getElementById('setor-select');
+  if (!sel) return;
+  // Pré-seleciona o setor atual do chamado
+  sel.value = ch.departamento_id || '';
+}
+
+async function changeSetor() {
+  const ch = AppState.currentChamado;
+  if (!ch) return;
+  if (!can('chamado_setor_change')) { Notif.toast('Sem permissão.', 'error'); return; }
+
+  const novoDeptoId = parseInt(document.getElementById('setor-select')?.value);
+  if (!novoDeptoId) { Notif.toast('Selecione um setor.', 'warning'); return; }
+  if (novoDeptoId === ch.departamento_id) { Notif.toast('O chamado já está nesse setor.', 'info'); return; }
+
+  const btn = document.getElementById('setor-btn');
+  if (btn) btn.disabled = true;
+
+  try {
+    const deptoAnteriorNome = _DEPTOS_MAP[ch.departamento_id] || '—';
+    const deptoNovoNome     = _DEPTOS_MAP[novoDeptoId];
+
+    // Atualiza chamado: novo setor + remove responsável anterior (era de outro setor)
+    const { error } = await db.from('chamados').update({
+      departamento_id: novoDeptoId,
+      responsavel_id:  null,
+    }).eq('id', ch.id);
+    if (error) throw error;
+
+    // Registra no histórico de status como entrada de log de setor
+    await db.from('historico_status').insert({
+      chamado_id:      ch.id,
+      status_anterior: `Setor: ${deptoAnteriorNome}`,
+      status_novo:     `Setor: ${deptoNovoNome}`,
+      alterado_por:    AppState.currentUser?.id,
+    });
+
+    Notif.notify(
+      `Chamado redirecionado de "${deptoAnteriorNome}" para "${deptoNovoNome}". Responsável removido.`,
+      'warning',
+      { title: 'Setor atualizado', chamadoId: ch.id }
+    );
+
+    await openChamado(ch.id);
+    silentRefresh();
+  } catch (e) {
     Notif.toast('Erro: ' + e.message, 'error');
   } finally {
     if (btn) btn.disabled = false;
