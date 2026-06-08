@@ -31,6 +31,8 @@ async function openChamado(id) {
     _applyModalPermissions();
     loadMessages(id);
     loadHistorico(id);
+    // ERRO 2: carrega painel de atribuição para Supervisor+
+    if (can('chamado_assign')) _loadAssignPanel(ch);
 
     document.getElementById('new-status').value      = ch.status || '';
     document.getElementById('new-prioridade').value  = ch.prioridade_id || '';
@@ -105,9 +107,12 @@ function _renderChamadoInfo(ch) {
 }
 
 function _applyModalPermissions() {
-  document.getElementById('actions-status-section').style.display   = can('chamado_status_change')   ? 'block' : 'none';
+  document.getElementById('actions-status-section').style.display     = can('chamado_status_change')   ? 'block' : 'none';
   document.getElementById('actions-prioridade-section').style.display = can('chamado_priority_change') ? 'block' : 'none';
-  document.getElementById('reply-section').style.display            = can('chamado_reply')            ? 'flex'  : 'none';
+  document.getElementById('reply-section').style.display              = can('chamado_reply')           ? 'flex'  : 'none';
+  // ERRO 2: painel de reatribuição visível somente para Supervisor+
+  const assignSection = document.getElementById('actions-assign-section');
+  if (assignSection) assignSection.style.display = can('chamado_assign') ? 'block' : 'none';
 }
 
 async function loadMessages(chamadoId) {
@@ -316,4 +321,66 @@ function closeModal() {
 
 function closeModalIfOutside(e) {
   if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ─── ERRO 2: Painel de Reatribuição (Supervisor) ──────────────────────────────
+async function _loadAssignPanel(ch) {
+  const el = document.getElementById('assign-select');
+  if (!el) return;
+
+  // Carregar membros do departamento do Supervisor logado
+  const deptoId = AppState.currentUser?.departamento_id;
+  if (!deptoId) return;
+
+  const { data: membros } = await db
+    .from('usuarios_adm')
+    .select('id, nome, cargo')
+    .eq('departamento_id', deptoId)
+    .eq('ativo', true)
+    .in('cargo', ['Atendente', 'Funcionário'])
+    .order('nome');
+
+  el.innerHTML = `<option value="">— Sem responsável —</option>` +
+    (membros || []).map(m =>
+      `<option value="${m.id}" ${ch.responsavel_id === m.id ? 'selected' : ''}>${escHtml(m.nome)} (${m.cargo})</option>`
+    ).join('');
+}
+
+async function assignResponsavel() {
+  const ch = AppState.currentChamado;
+  if (!ch) return;
+  if (!can('chamado_assign')) { Notif.toast('Sem permissão.', 'error'); return; }
+
+  const novoId = document.getElementById('assign-select')?.value || null;
+  const btn    = document.getElementById('assign-btn');
+  if (btn) btn.disabled = true;
+
+  try {
+    const updates = { responsavel_id: novoId || null };
+
+    // Quando atribuído a alguém e status ainda é Novo/Em Análise → muda para Em Atendimento
+    if (novoId && ['Novo', 'Em Análise'].includes(ch.status)) {
+      updates.status = 'Em Atendimento';
+      await db.from('historico_status').insert({
+        chamado_id: ch.id, status_anterior: ch.status,
+        status_novo: 'Em Atendimento', alterado_por: AppState.currentUser?.id,
+      });
+    }
+
+    const { error } = await db.from('chamados').update(updates).eq('id', ch.id);
+    if (error) throw error;
+
+    const nomeResp = document.getElementById('assign-select')?.selectedOptions[0]?.text || 'Nenhum';
+    Notif.notify(
+      novoId ? `Chamado atribuído a ${nomeResp}.` : 'Responsável removido.',
+      'success', { title: 'Atribuição atualizada', chamadoId: ch.id }
+    );
+
+    await openChamado(ch.id);
+    silentRefresh();
+  } catch(e) {
+    Notif.toast('Erro: ' + e.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }

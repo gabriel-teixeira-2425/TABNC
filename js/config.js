@@ -1,17 +1,12 @@
 /**
  * config.js — Configurações globais, Supabase, permissões por cargo
- *
- * NOTA RLS: Para demonstração, mantenha o RLS desabilitado no Supabase
- * ou crie políticas públicas. O cliente anon já está configurado.
  */
 
 // ─── Supabase ────────────────────────────────────────────────────────────────
-const SUPABASE_URL         = 'https://hwyzqacspefbhllfwito.supabase.co';
-const SUPABASE_KEY         = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3eXpxYWNzcGVmYmhsbGZ3aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTYwMzEsImV4cCI6MjA5NTg5MjAzMX0.KWpvN3fTawJ8nDe7RulmY6nX1-5pvOaQbCrz_LN_xSE';
+const SUPABASE_URL = 'https://hwyzqacspefbhllfwito.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3eXpxYWNzcGVmYmhsbGZ3aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTYwMzEsImV4cCI6MjA5NTg5MjAzMX0.KWpvN3fTawJ8nDe7RulmY6nX1-5pvOaQbCrz_LN_xSE';
 
-// Cliente normal — usado para todas as operações do usuário logado
-const db      = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-// Cliente admin — usado apenas para operações Auth admin (criar/excluir usuários)
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ─── Roles ────────────────────────────────────────────────────────────────────
 const ROLE_LEVELS = {
@@ -26,18 +21,20 @@ const PERMISSIONS = {
   // Páginas
   page_dashboard:      1,
   page_chamados:       1,
-  page_novo_chamado:   1,   // todos os logados
-  page_perfil:         1,   // todos os logados
-  page_configuracoes:  1,   // todos os logados
+  page_novo_chamado:   1,
+  page_perfil:         1,
+  page_configuracoes:  1,
   page_relatorios:     2,   // Atendente+
   page_usuarios:       4,   // só Administrador
-  page_supervisor:     1,   // Supervisores podem ver
+  page_supervisor:     3,   // só Supervisor
 
   // Chamados
   chamado_view:            1,
   chamado_reply:           1,
-  chamado_status_change:   2,
+  // ERRO 3: Funcionário (nível 1) precisa alterar status para resolver chamados
+  chamado_status_change:   1,
   chamado_priority_change: 3,
+  // ERRO 2: só Supervisor (nível 3) pode reatribuir responsável
   chamado_assign:          3,
   chamado_delete:          4,
 
@@ -92,5 +89,6 @@ const PRIO_META = {
   4: { label: 'Crítica', color: '#f05b5b', cls: 'prio-4', dotColor: '#f05b5b' },
 };
 
-const CANAIS   = ['WhatsApp','Email','Teams','Telefone'];
-const DEPTOS   = ['Financeiro','RH','TI','Suprimentos','Administrativo','Jurídico','Geral'];
+// ERRO 4: adicionado 'Portal do Cliente' para o formulário do funcionário
+const CANAIS = ['WhatsApp','Email','Teams','Telefone','Portal do Cliente'];
+const DEPTOS = ['Financeiro','RH','TI','Suprimentos','Administrativo','Jurídico','Geral'];

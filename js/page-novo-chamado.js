@@ -5,7 +5,8 @@
  * cria o chamado e retorna o protocolo/prioridade_id.
  */
 
-const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook-test/chamados';
+// ERRO 9: /webhook/ = produção (ativo sempre); /webhook-test/ = só com editor aberto
+const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/chamados';
 
 // Mapa nome → id para canais e departamentos (conforme banco)
 const CANAL_IDS = {
@@ -354,8 +355,56 @@ async function saveNovoCliente() {
   if (!nome)    { errEl.textContent = 'Nome obrigatório.';    errEl.style.display = 'block'; return; }
   if (!empresa) { errEl.textContent = 'Empresa obrigatória.'; errEl.style.display = 'block'; return; }
 
+  // Salva sessão do admin para restaurar após o signUp
+  const { data: { session: sessaoAdmin } } = await db.auth.getSession();
+
   try {
+    // ── 1. Criar (ou reutilizar) login no Auth ────────────────────────────────
+    let authClienteId = null;
+
+    if (email) {
+      const { data: signUpData, error: signUpErr } = await db.auth.signUp({
+        email,
+        password: '123456',
+        options: { data: { name: nome, tipo: 'cliente' } },
+      });
+
+      if (signUpErr) {
+        if (signUpErr.message?.toLowerCase().includes('already registered')) {
+          // E-mail já tem Auth — faz login para pegar o UUID e sai logo em seguida
+          const { data: siData, error: siErr } = await db.auth.signInWithPassword({
+            email, password: '123456',
+          });
+          if (siErr) {
+            // Senha diferente: avisa mas não bloqueia — continua sem authId
+            console.warn('Cliente já tem Auth com senha diferente:', siErr.message);
+          } else {
+            authClienteId = siData.user?.id;
+            await db.auth.signOut();
+          }
+        } else {
+          throw signUpErr;
+        }
+      } else {
+        authClienteId = signUpData.user?.id;
+        if (signUpData.session) {
+          // signUp retornou sessão (confirmação desativada) — sai para restaurar admin
+          await db.auth.signOut();
+        }
+      }
+
+      // ── 2. Restaura sessão do admin ─────────────────────────────────────────
+      if (sessaoAdmin) {
+        await db.auth.setSession({
+          access_token:  sessaoAdmin.access_token,
+          refresh_token: sessaoAdmin.refresh_token,
+        });
+      }
+    }
+
+    // ── 3. Inserir na tabela clientes ─────────────────────────────────────────
     const { data, error } = await db.from('clientes').insert({
+      ...(authClienteId ? { id: authClienteId } : {}),
       nome,
       empresa:      empresa || null,
       email:        email   || null,
@@ -368,8 +417,18 @@ async function saveNovoCliente() {
     _todosClientes.push(data);
     selecionarCliente(data.id, data.nome, data.email||'', data.telefone||'', data.departamento||'', data.empresa||'');
     closeNovoClienteModal();
-    Notif.toast(`Cliente "${nome}" (${empresa}) criado.`, 'success');
+    Notif.toast(
+      `Cliente "${nome}" criado${email ? ' com acesso ao portal (senha: 123456)' : ''}.`,
+      'success'
+    );
   } catch(e) {
+    // Garante restauração da sessão mesmo em erro
+    if (sessaoAdmin) {
+      await db.auth.setSession({
+        access_token:  sessaoAdmin.access_token,
+        refresh_token: sessaoAdmin.refresh_token,
+      }).catch(() => {});
+    }
     errEl.textContent   = e.message;
     errEl.style.display = 'block';
   }

@@ -293,7 +293,6 @@ function loadAbrirChamadoForm() {
   if (!el) return;
 
   const optDeptos = DEPTOS.map(d => `<option>${d}</option>`).join('');
-  const optCanais = CANAIS.map(c => `<option>${c}</option>`).join('');
 
   el.innerHTML = `
     <div style="max-width:680px;margin:0 auto">
@@ -325,11 +324,7 @@ function loadAbrirChamadoForm() {
             onblur="this.style.borderColor='var(--border-strong)'"></textarea>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-          <div class="field" style="margin:0">
-            <label class="field-label">Canal</label>
-            <select id="cli-nc-canal" class="inp" style="width:100%">${optCanais}</select>
-          </div>
+        <div style="margin-bottom:20px">
           <div class="field" style="margin:0">
             <label class="field-label">Departamento</label>
             <select id="cli-nc-departamento" class="inp" style="width:100%">${optDeptos}</select>
@@ -363,8 +358,9 @@ async function enviarChamadoCliente() {
   const cli      = ClienteState.currentCliente;
   const assunto  = document.getElementById('cli-nc-assunto')?.value.trim();
   const mensagem = document.getElementById('cli-nc-mensagem')?.value.trim();
-  const canal    = document.getElementById('cli-nc-canal')?.value || 'Portal';
-  const depto    = document.getElementById('cli-nc-departamento')?.value || 'Geral';
+  // ERRO 4: canal sempre fixo como 'Portal do Cliente' no portal do cliente
+  const canal = 'Portal do Cliente';
+  const depto = document.getElementById('cli-nc-departamento')?.value || 'Geral';
   const errEl    = document.getElementById('cli-nc-error');
 
   if (errEl) errEl.style.display = 'none';
@@ -391,7 +387,9 @@ async function enviarChamadoCliente() {
       origem:         'portal_cliente',
     };
 
-    const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook-test/chamados';
+    // ERRO 9: usar /webhook/ (produção) em vez de /webhook-test/
+    // /webhook-test/ só funciona enquanto o workflow está aberto no editor do n8n
+    const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/chamados';
     const response = await fetch(N8N_WEBHOOK_URL, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -145,6 +145,19 @@ async function doLogoutCliente() {
   Notif.toast('Sessão encerrada.', 'info');
 }
 
+// ERRO 8: auto-refresh silencioso a cada 10 minutos para o portal do cliente
+let _cliAutoRefreshTimer = null;
+
+function _startClienteAutoRefresh() {
+  if (_cliAutoRefreshTimer) clearInterval(_cliAutoRefreshTimer);
+  _cliAutoRefreshTimer = setInterval(() => {
+    const appCli = document.getElementById('app-cliente');
+    if (appCli && appCli.style.display !== 'none') {
+      loadClienteChamados(true); // silencioso
+    }
+  }, 10 * 60 * 1000); // 10 minutos fixos, sem opção de configuração
+}
+
 /** Exibe o portal do cliente */
 function showAppCliente() {
   const loginScr = document.getElementById('login-screen');
@@ -156,6 +169,7 @@ function showAppCliente() {
   if (appCli)   appCli.style.display   = 'block';
 
   navigateCliente('meus-chamados');
+  _startClienteAutoRefresh(); // ERRO 8
 }
 
 // Substitui checkSession original para usar a versão unificada

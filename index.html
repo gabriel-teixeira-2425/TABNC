@@ -467,7 +467,7 @@
         <div id="cli-tab-msgs" style="display:flex;flex-direction:column;gap:12px;flex:1">
           <div class="msg-list" id="cli-msg-list"></div>
           <div id="cli-reply-section" style="display:flex;flex-direction:column;gap:8px">
-            <textarea id="cli-reply-text" placeholder="Escreva sua mensagem..."></textarea>
+            <textarea id="cli-reply-text" placeholder="Escreva sua mensagem..." style="width:100%;background:var(--bg-surface);border:1px solid var(--border-strong);border-radius:9px;padding:10px 14px;color:var(--text-primary);font-family:inherit;font-size:13px;outline:none;resize:vertical;min-height:80px;transition:border-color .2s, box-shadow .2s" onfocus="this.style.borderColor='var(--accent)';this.style.boxShadow='0 0 0 3px var(--accent-glow)'" onblur="this.style.borderColor='var(--border-strong)';this.style.boxShadow='none'"></textarea>
             <div>
               <button class="btn btn-primary btn-sm" id="cli-send-reply-btn" onclick="sendCliReply()">
                 <span id="cli-send-icon"></span> Enviar Mensagem
@@ -498,10 +498,8 @@
           <div class="info-group" id="cli-chamado-info"></div>
         </div>
         <!-- Aviso: cliente não pode alterar status -->
-        <div style="padding:10px 12px;background:var(--accent-glow);border:1px solid var(--border-md);
-          border-radius:9px;font-size:11px;color:var(--text-muted);line-height:1.6">
-          ${Icons.get ? '' : ''}
-          <span id="cli-side-info-icon"></span>
+        <div style="padding:10px 12px;background:var(--accent-glow);border:1px solid var(--border-md);border-radius:9px;font-size:11px;color:var(--text-muted);line-height:1.6;display:flex;align-items:flex-start;gap:6px">
+          <span id="cli-side-info-icon" style="flex-shrink:0;margin-top:1px"></span>
           Para solicitar alteração de status ou prioridade, envie uma mensagem ao nosso time.
         </div>
       </div>
@@ -564,6 +562,18 @@
             <textarea id="justificativa-prioridade" placeholder="Justificativa obrigat&oacute;ria..."></textarea>
             <button class="btn btn-secondary btn-sm btn-full" id="change-prio-btn" onclick="changePrioridade()">
               <span id="change-prio-icon"></span> Aplicar Prioridade
+            </button>
+          </div>
+        </div>
+        <!-- ERRO 2: Painel de Reatribuição — visível só para Supervisor -->
+        <div id="actions-assign-section" style="display:none">
+          <div class="section-title"><span id="side-assign-icon"></span> Atribuir Responsável</div>
+          <div class="action-section">
+            <select class="action-sel" id="assign-select">
+              <option value="">— Sem responsável —</option>
+            </select>
+            <button class="btn btn-secondary btn-sm btn-full" id="assign-btn" onclick="assignResponsavel()">
+              <span id="assign-btn-icon"></span> Atribuir
             </button>
           </div>
         </div>
@@ -817,6 +827,12 @@ window.addEventListener('DOMContentLoaded', () => {
   setCliIcon('cli-side-atend-icon',    'headphone',  12);
   setCliIcon('cli-side-ticket-icon',   'ticket',     12);
   setCliIcon('cli-side-info-icon',     'infoCircle', 12);
+
+  // Assign section icon (ERRO 2)
+  const sideAssign = document.getElementById('side-assign-icon');
+  if (sideAssign) sideAssign.innerHTML = Icons.get('users', 12);
+  const assignBtnIcon = document.getElementById('assign-btn-icon');
+  if (assignBtnIcon) assignBtnIcon.innerHTML = Icons.get('check', 13);
 
   checkSession();
 

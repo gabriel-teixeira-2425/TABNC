@@ -1,41 +1,17 @@
 /**
  * page-chamados.js — Listagem, filtros, ordenação e paginação de chamados
+ * CORRIGIDO ERRO 1/2: usa buildChamadosQuery centralizado
  */
 
 async function loadChamados(silent = false) {
   if (!silent) {
-    document.getElementById('chamados-tbody').innerHTML = `...`;
+    const tbody = document.getElementById('chamados-tbody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="loading-cell"><span class="spinner"></span> Carregando...</td></tr>`;
   }
 
   try {
-    let query = db.from('chamados').select('*, clientes(id, nome, email, empresa)');
-    
-    // 🔥 NOVA LÓGICA DE PERMISSÕES POR CARGO 🔥
-    if (AppState.currentUser && AppState.currentUser.cargo !== 'Administrador') {
-      const userDeptoId = AppState.currentUser.departamento_id;
-      const userCargo = AppState.currentUser.cargo;
-      const userId = AppState.currentUser.id;
-      
-      if (userCargo === 'Supervisor') {
-        // Supervisor: vê chamados do seu departamento (todos os chamados do setor)
-        if (userDeptoId) {
-          query = query.eq('departamento_id', userDeptoId);
-          console.log(`👔 Supervisor: visualizando chamados do departamento ${userDeptoId}`);
-        }
-      } 
-      else if (userCargo === 'Atendente') {
-        // Atendente: vê apenas chamados atribuídos a ele
-        query = query.eq('responsavel_id', userId);
-        console.log(`🎧 Atendente: visualizando chamados atribuídos a ele`);
-      }
-      else if (userCargo === 'Funcionário') {
-        // Funcionário: vê apenas chamados atribuídos a ele
-        query = query.eq('responsavel_id', userId);
-        console.log(`👤 Funcionário: visualizando chamados atribuídos a ele`);
-      }
-    }
-    
-    const { data, error } = await query.order('data_abertura', { ascending: false });
+    const { data, error } = await buildChamadosQuery('*, clientes(id, nome, email, empresa)')
+      .order('data_abertura', { ascending: false });
 
     if (error) throw error;
 
@@ -47,35 +23,29 @@ async function loadChamados(silent = false) {
 }
 
 function filterChamados() {
-  const search  = document.getElementById('search-input')?.value.toLowerCase() || '';
-  const status  = document.getElementById('filter-status')?.value || '';
-  const prioId  = document.getElementById('filter-prioridade')?.value || '';
+  const search = document.getElementById('search-input')?.value.toLowerCase()  || '';
+  const status = document.getElementById('filter-status')?.value               || '';
+  const prioId = document.getElementById('filter-prioridade')?.value           || '';
 
   AppState.filteredChamados = AppState.allChamados.filter(c => {
     const matchSearch = !search ||
-      (c.protocolo  || '').toLowerCase().includes(search) ||
-      (c.assunto    || '').toLowerCase().includes(search) ||
+      (c.protocolo         || '').toLowerCase().includes(search) ||
+      (c.assunto           || '').toLowerCase().includes(search) ||
       (c.clientes?.nome    || '').toLowerCase().includes(search) ||
       (c.clientes?.empresa || '').toLowerCase().includes(search);
-    const matchStatus = !status  || c.status === status;
-    const matchPrio   = !prioId  || String(c.prioridade_id) === prioId;
+    const matchStatus = !status || c.status === status;
+    const matchPrio   = !prioId || String(c.prioridade_id) === prioId;
     return matchSearch && matchStatus && matchPrio;
   });
 
   const { sortField, sortAsc } = AppState;
   AppState.filteredChamados.sort((a, b) => {
-    let va, vb;
-    if (sortField === 'empresa') {
-      va = a.clientes?.empresa || '';
-      vb = b.clientes?.empresa || '';
-    } else {
-      va = a[sortField];
-      vb = b[sortField];
-    }
+    let va = sortField === 'empresa' ? (a.clientes?.empresa || '') : a[sortField];
+    let vb = sortField === 'empresa' ? (b.clientes?.empresa || '') : b[sortField];
     if (typeof va === 'string') va = va.toLowerCase();
     if (typeof vb === 'string') vb = vb.toLowerCase();
-    if (va == null) va = '';
-    if (vb == null) vb = '';
+    va = va ?? '';
+    vb = vb ?? '';
     if (va < vb) return sortAsc ? -1 : 1;
     if (va > vb) return sortAsc ?  1 : -1;
     return 0;
@@ -93,11 +63,9 @@ function sortBy(field) {
   document.querySelectorAll('th[data-sort]').forEach(th => {
     const ico = th.querySelector('.sort-icon');
     if (!ico) return;
-    if (th.dataset.sort === field) {
-      ico.innerHTML = Icons.get(AppState.sortAsc ? 'sortAsc' : 'sortDesc', 12);
-    } else {
-      ico.innerHTML = Icons.get('sort', 12);
-    }
+    ico.innerHTML = th.dataset.sort === field
+      ? Icons.get(AppState.sortAsc ? 'sortAsc' : 'sortDesc', 12)
+      : Icons.get('sort', 12);
   });
 
   filterChamados();
@@ -108,16 +76,17 @@ function renderFilterSummary() {
   const filtered = AppState.filteredChamados.length;
   const el = document.getElementById('filter-summary');
   if (!el) return;
-  el.textContent = filtered < total
-    ? `${filtered} de ${total} chamados`
-    : `${total} chamados`;
-  el.style.display = 'inline';
+  el.textContent     = filtered < total ? `${filtered} de ${total} chamados` : `${total} chamados`;
+  el.style.display   = 'inline';
 }
 
 function clearFilters() {
-  document.getElementById('search-input').value       = '';
-  document.getElementById('filter-status').value      = '';
-  document.getElementById('filter-prioridade').value  = '';
+  const s = document.getElementById('search-input');
+  const f = document.getElementById('filter-status');
+  const p = document.getElementById('filter-prioridade');
+  if (s) s.value = '';
+  if (f) f.value = '';
+  if (p) p.value = '';
   filterChamados();
 }
 
@@ -127,17 +96,15 @@ function renderChamadosTable() {
 
   if (!AppState.filteredChamados.length) {
     tbody.innerHTML = `
-      <tr>
-        <td colspan="8">
-          <div class="empty-state">
-            ${Icons.get('search', 32)}
-            <p>Nenhum chamado encontrado</p>
-            <button class="btn btn-secondary btn-sm" onclick="clearFilters()" style="margin-top:12px">
-              ${Icons.get('x', 14)} Limpar filtros
-            </button>
-          </div>
-        </td>
-      </tr>`;
+      <tr><td colspan="8">
+        <div class="empty-state">
+          ${Icons.get('search', 32)}
+          <p>Nenhum chamado encontrado</p>
+          <button class="btn btn-secondary btn-sm" onclick="clearFilters()" style="margin-top:12px">
+            ${Icons.get('x', 14)} Limpar filtros
+          </button>
+        </div>
+      </td></tr>`;
     document.getElementById('pagination-info').textContent = '0 chamados';
     document.getElementById('pagination-btns').innerHTML   = '';
     return;
@@ -162,22 +129,19 @@ function renderChamadosTable() {
     return `
       <tr class="row-hover" onclick="openChamado('${c.id}')">
         <td>
-          <span class="mono proto-cell" title="Clique para copiar" onclick="event.stopPropagation();copyToClipboard('${c.protocolo||''}')">
+          <span class="mono proto-cell" title="Clique para copiar"
+            onclick="event.stopPropagation();copyToClipboard('${c.protocolo||''}')">
             ${Icons.get('copy', 11)} ${c.protocolo || '—'}
           </span>
         </td>
-        <td>
-          <div class="td-subject" title="${escHtml(c.assunto||'')}">${escHtml(c.assunto || '—')}</div>
-        </td>
+        <td><div class="td-subject" title="${escHtml(c.assunto||'')}">${escHtml(c.assunto || '—')}</div></td>
         <td>
           <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${escHtml(empresa)}</div>
           ${cliente ? `<div class="td-client">${Icons.get('user', 11)} ${escHtml(cliente)}</div>` : ''}
         </td>
         <td>${prioBadge(c.prioridade_id)}</td>
         <td>${statusBadge(c.status)}</td>
-        <td class="td-date">
-          <span title="${formatDate(c.data_abertura)}">${timeAgo(c.data_abertura)}</span>
-        </td>
+        <td class="td-date"><span title="${formatDate(c.data_abertura)}">${timeAgo(c.data_abertura)}</span></td>
         <td>
           <div class="sla-cell">
             ${slaHtml}
@@ -218,8 +182,8 @@ function renderPagination(total, totPages, start) {
   }
 
   html += `
-    <button class="page-btn" onclick="goPage(${cur+1})" ${cur===totPages?'disabled':''} title="Proxima">${Icons.get('chevronRight',12)}</button>
-    <button class="page-btn" onclick="goPage(${totPages})" ${cur===totPages?'disabled':''} title="Ultima">${Icons.get('chevronsRight',12)}</button>`;
+    <button class="page-btn" onclick="goPage(${cur+1})" ${cur===totPages?'disabled':''} title="Próxima">${Icons.get('chevronRight',12)}</button>
+    <button class="page-btn" onclick="goPage(${totPages})" ${cur===totPages?'disabled':''} title="Última">${Icons.get('chevronsRight',12)}</button>`;
 
   btns.innerHTML = html;
 }
@@ -229,7 +193,7 @@ function goPage(p) {
   if (p < 1 || p > tot) return;
   AppState.currentPage = p;
   renderChamadosTable();
-  document.getElementById('page-chamados').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('page-chamados')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function quickStatus(id, event) {
@@ -264,7 +228,8 @@ async function applyQuickStatus(id, newStatus, pop) {
     const { error } = await db.from('chamados').update({ status: newStatus }).eq('id', id);
     if (error) throw error;
     await db.from('historico_status').insert({
-      chamado_id: id, status_anterior: ch.status, status_novo: newStatus, alterado_por: AppState.currentUser?.id
+      chamado_id: id, status_anterior: ch.status, status_novo: newStatus,
+      alterado_por: AppState.currentUser?.id,
     });
     Notif.notify(`Status alterado para "${newStatus}"`, 'success', { title: 'Chamado atualizado', chamadoId: id });
     await loadChamados(true);

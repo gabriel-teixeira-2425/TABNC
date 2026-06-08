@@ -26,24 +26,35 @@ async function loadUserProfile(email) {
   return true;
 }
 
-/** Mostra/oculta elementos na sidebar com base no cargo */
+/**
+ * Mostra/oculta nav-items e seções inteiras da sidebar com base no cargo.
+ * ERRO 7: oculta a seção (<nav-section>) quando nenhum item dela está visível.
+ */
 function applyUserPermissions() {
-  const show = (id, perm) => {
+  const showNav = (id, perm) => {
     const el = document.getElementById(id);
     if (el) el.style.display = can(perm) ? 'flex' : 'none';
   };
-  show('nav-usuarios',    'page_usuarios');
-  show('nav-relatorios',  'page_relatorios');
-  // Novas páginas — todos os logados
-  show('nav-novo-chamado','page_novo_chamado');
-  show('nav-perfil',      'page_perfil');
-  show('nav-configuracoes','page_configuracoes');
-    // Mostrar página de supervisor APENAS para Supervisores
+
+  showNav('nav-usuarios',     'page_usuarios');
+  showNav('nav-relatorios',   'page_relatorios');
+  showNav('nav-novo-chamado', 'page_novo_chamado');
+  showNav('nav-perfil',       'page_perfil');
+  showNav('nav-configuracoes','page_configuracoes');
+
+  // Supervisor: apenas para cargo Supervisor
   const isSupervisor = AppState.currentUser?.cargo === 'Supervisor';
   const supervisorNav = document.getElementById('nav-supervisor');
-  if (supervisorNav) {
-    supervisorNav.style.display = isSupervisor ? 'flex' : 'none';
-  }
+  if (supervisorNav) supervisorNav.style.display = isSupervisor ? 'flex' : 'none';
+
+  // ERRO 7: percorre cada nav-section e oculta se não tiver nenhum item visível
+  document.querySelectorAll('#sidebar .nav-section').forEach(section => {
+    const items = section.querySelectorAll('.nav-item');
+    const anyVisible = Array.from(items).some(
+      item => item.style.display !== 'none' && getComputedStyle(item).display !== 'none'
+    );
+    section.style.display = anyVisible ? '' : 'none';
+  });
 }
 
 function updateUserUI() {

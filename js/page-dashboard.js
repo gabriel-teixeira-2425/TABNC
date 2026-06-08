@@ -1,37 +1,14 @@
 /**
- * page-dashboard.js — Dashboard com metricas e graficos
- * CORRIGIDO: select sem join prioridades e coluna Empresa na tabela recente
+ * page-dashboard.js — Dashboard com métricas e gráficos
+ * CORRIGIDO ERRO 1/2: usa buildChamadosQuery centralizado
  */
 
 async function loadDashboard(silent = false) {
   if (!silent) renderMetricsSkeleton();
 
   try {
-    let query = db.from('chamados').select('*, clientes(nome, empresa)');
-    
-    // 🔥 NOVA LÓGICA DE PERMISSÕES POR CARGO 🔥
-    if (AppState.currentUser && AppState.currentUser.cargo !== 'Administrador') {
-      const userDeptoId = AppState.currentUser.departamento_id;
-      const userCargo = AppState.currentUser.cargo;
-      const userId = AppState.currentUser.id;
-      
-      if (userCargo === 'Supervisor') {
-        // Supervisor: vê chamados do seu departamento
-        if (userDeptoId) {
-          query = query.eq('departamento_id', userDeptoId);
-        }
-      } 
-      else if (userCargo === 'Atendente') {
-        // Atendente: vê apenas chamados atribuídos a ele
-        query = query.eq('responsavel_id', userId);
-      }
-      else if (userCargo === 'Funcionário') {
-        // Funcionário: vê apenas chamados atribuídos a ele
-        query = query.eq('responsavel_id', userId);
-      }
-    }
-    
-    const { data: ch, error } = await query.order('data_abertura', { ascending: false });
+    const { data: ch, error } = await buildChamadosQuery('*, clientes(nome, empresa)')
+      .order('data_abertura', { ascending: false });
 
     if (error) throw error;
 
@@ -55,17 +32,14 @@ async function loadDashboard(silent = false) {
     const badge = document.getElementById('badge-novos');
     if (badge) {
       badge.style.display = novos > 0 ? 'flex' : 'none';
-      badge.textContent   = novos > 9 ? '9+' : novos;
+      badge.textContent   = novos > 9 ? '9+' : String(novos);
     }
 
     AppState.allChamados = ch;
 
     if (!silent && criticos > 0) {
-      Notif.push(
-        `${criticos} chamado(s) com prioridade Critica em aberto.`,
-        'warning',
-        { title: 'Atencao — Chamados Criticos' }
-      );
+      Notif.push(`${criticos} chamado(s) com prioridade Crítica em aberto.`, 'warning',
+        { title: 'Atenção — Chamados Críticos' });
     }
   } catch (e) {
     if (!silent) Notif.toast('Erro ao carregar dashboard: ' + e.message, 'error');
@@ -97,31 +71,29 @@ function renderMetrics({ abertos, hoje, atrasados, criticos }) {
       <div class="metric-icon-wrap green">${Icons.get('calendar', 20)}</div>
       <div class="metric-val">${hoje}</div>
       <div class="metric-lbl">Abertos Hoje</div>
-      <div class="metric-sub">nas ultimas 24h</div>
+      <div class="metric-sub">nas últimas 24h</div>
     </div>
     <div class="metric-card accent-red ${atrasados > 0 ? 'pulse-border' : ''}">
       <div class="metric-icon-wrap red">${Icons.get('clock', 20)}</div>
       <div class="metric-val" style="color:${atrasados>0?'var(--red)':'inherit'}">${atrasados}</div>
       <div class="metric-lbl">SLA Atrasados</div>
-      <div class="metric-sub">requerem atencao</div>
+      <div class="metric-sub">requerem atenção</div>
     </div>
     <div class="metric-card accent-purple ${criticos > 0 ? 'pulse-border-purple' : ''}">
       <div class="metric-icon-wrap purple">${Icons.get('warning', 20)}</div>
       <div class="metric-val" style="color:${criticos>0?'var(--purple)':'inherit'}">${criticos}</div>
-      <div class="metric-lbl">Criticos Abertos</div>
-      <div class="metric-sub">prioridade maxima</div>
-    </div>
-  `;
+      <div class="metric-lbl">Críticos Abertos</div>
+      <div class="metric-sub">prioridade máxima</div>
+    </div>`;
 }
 
 function renderCharts(chamados) {
-  if (AppState.charts.status)    { AppState.charts.status.destroy();    }
-  if (AppState.charts.prioridade){ AppState.charts.prioridade.destroy();}
-  if (AppState.charts.tendencia) { AppState.charts.tendencia.destroy(); }
+  if (AppState.charts.status)     AppState.charts.status.destroy();
+  if (AppState.charts.prioridade) AppState.charts.prioridade.destroy();
+  if (AppState.charts.tendencia)  AppState.charts.tendencia.destroy();
 
   const chartDefaults = {
-    responsive: true,
-    maintainAspectRatio: false,
+    responsive: true, maintainAspectRatio: false,
     plugins: { legend: { labels: { color: '#8b92a8', font: { family: 'DM Sans', size: 11 }, boxWidth: 10, padding: 12 } } },
   };
 
@@ -138,7 +110,7 @@ function renderCharts(chamados) {
     }
   );
 
-  const pCounts = { 1:0, 2:0, 3:0, 4:0 };
+  const pCounts  = { 1:0, 2:0, 3:0, 4:0 };
   chamados.forEach(c => { if (c.prioridade_id) pCounts[c.prioridade_id]++; });
   const pColors  = [PRIO_META[1].color, PRIO_META[2].color, PRIO_META[3].color, PRIO_META[4].color];
   const pBgAlpha = pColors.map(c => c + '30');
@@ -146,10 +118,8 @@ function renderCharts(chamados) {
   AppState.charts.prioridade = new Chart(
     document.getElementById('chart-prioridade').getContext('2d'), {
       type: 'bar',
-      data: {
-        labels: ['Baixa','Media','Alta','Critica'],
-        datasets: [{ data: [pCounts[1],pCounts[2],pCounts[3],pCounts[4]], backgroundColor: pBgAlpha, borderColor: pColors, borderWidth: 2, borderRadius: 7 }]
-      },
+      data: { labels: ['Baixa','Média','Alta','Crítica'],
+        datasets: [{ data: [pCounts[1],pCounts[2],pCounts[3],pCounts[4]], backgroundColor: pBgAlpha, borderColor: pColors, borderWidth: 2, borderRadius: 7 }] },
       options: {
         ...chartDefaults,
         plugins: { legend: { display: false } },
@@ -163,7 +133,7 @@ function renderCharts(chamados) {
 
   const days = [], dayCounts = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+    const d = new Date(); d.setDate(d.getDate()-i); d.setHours(0,0,0,0);
     const next = new Date(d); next.setDate(next.getDate()+1);
     days.push(d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }));
     dayCounts.push(chamados.filter(c => { const dt = new Date(c.data_abertura); return dt >= d && dt < next; }).length);
@@ -172,17 +142,9 @@ function renderCharts(chamados) {
   AppState.charts.tendencia = new Chart(
     document.getElementById('chart-tendencia').getContext('2d'), {
       type: 'line',
-      data: {
-        labels: days,
-        datasets: [{
-          label: 'Chamados abertos',
-          data: dayCounts,
-          borderColor: '#5b8ef0',
-          backgroundColor: 'rgba(91,142,240,0.08)',
-          fill: true, tension: 0.4,
-          pointBackgroundColor: '#5b8ef0', pointRadius: 4, pointHoverRadius: 6,
-        }]
-      },
+      data: { labels: days, datasets: [{ label: 'Chamados abertos', data: dayCounts,
+        borderColor: '#5b8ef0', backgroundColor: 'rgba(91,142,240,0.08)',
+        fill: true, tension: 0.4, pointBackgroundColor: '#5b8ef0', pointRadius: 4, pointHoverRadius: 6 }] },
       options: {
         ...chartDefaults,
         plugins: { legend: { display: false } },
@@ -216,7 +178,6 @@ function renderRecentTable(chamados) {
         <td>${prioBadge(c.prioridade_id)}</td>
         <td>${statusBadge(c.status)}</td>
         <td class="td-date">${timeAgo(c.data_abertura)}</td>
-      </tr>
-    `;
+      </tr>`;
   }).join('');
 }
