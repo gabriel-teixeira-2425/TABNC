@@ -7,6 +7,7 @@ async function loadChamados(silent = false) {
   if (!silent) {
     const tbody = document.getElementById('chamados-tbody');
     if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="loading-cell"><span class="spinner"></span> Carregando...</td></tr>`;
+    _initExportBtn();
   }
 
   try {
@@ -236,4 +237,58 @@ async function applyQuickStatus(id, newStatus, pop) {
   } catch(e) {
     Notif.toast('Erro: ' + e.message, 'error');
   }
+}
+
+// ─── Exportação ───────────────────────────────────────────────────────────────
+function _initExportBtn() {
+  const btn = document.getElementById('btn-export-chamados');
+  const iconEl = document.getElementById('export-chamados-icon');
+  if (btn) btn.style.display = can('export_data') ? 'inline-flex' : 'none';
+  if (iconEl) iconEl.innerHTML = Icons.get('download', 14);
+}
+
+function exportChamadosCSV() {
+  if (!can('export_data')) { Notif.toast('Sem permissão para exportar.', 'error'); return; }
+
+  const dados = AppState.filteredChamados;
+  if (!dados.length) { Notif.toast('Nenhum chamado para exportar.', 'warning'); return; }
+
+  const DEPTOS = ['', 'Financeiro', 'RH', 'TI', 'Suprimentos', 'Administrativo', 'Jurídico', 'Geral'];
+
+  const cabecalho = ['Protocolo','Assunto','Cliente','Empresa','Status','Prioridade','Setor','Canal','Abertura','Venc. SLA','Responsável'];
+
+  const linhas = dados.map(c => [
+    c.protocolo       || '—',
+    c.assunto         || '—',
+    c.clientes?.nome  || '—',
+    c.clientes?.empresa || '—',
+    c.status          || '—',
+    PRIO_META[c.prioridade_id]?.label || '—',
+    DEPTOS[c.departamento_id]  || '—',
+    c.canal           || '—',
+    formatDate(c.data_abertura),
+    c.data_vencimento_sla ? formatDate(c.data_vencimento_sla) : '—',
+    c.responsavel_id  || '—',
+  ]);
+
+  _downloadCSV([cabecalho, ...linhas], `chamados_${_tsNow()}.csv`);
+  Notif.toast(`${dados.length} chamados exportados.`, 'success');
+}
+
+function _downloadCSV(rows, filename) {
+  const bom  = '\uFEFF'; // BOM para Excel reconhecer UTF-8
+  const csv  = bom + rows.map(r =>
+    r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')
+  ).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function _tsNow() {
+  return new Date().toISOString().slice(0,10);
 }

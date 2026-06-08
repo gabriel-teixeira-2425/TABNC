@@ -215,6 +215,9 @@
           <button class="btn btn-ghost btn-sm" onclick="clearFilters()" title="Limpar filtros">
             <span id="clear-icon-el"></span>
           </button>
+          <button class="btn btn-ghost btn-sm" id="btn-export-chamados" onclick="exportChamadosCSV()" title="Exportar chamados" style="display:none">
+            <span id="export-chamados-icon"></span> Exportar
+          </button>
         </div>
         <table>
           <thead>
@@ -246,6 +249,17 @@
 
     <!-- PAGE: RELATORIOS -->
     <div data-page id="page-relatorios" class="page-content" style="display:none">
+      <div class="table-card" style="margin-bottom:16px;padding:12px 16px" id="relatorios-toolbar" style="display:none">
+        <div class="table-toolbar">
+          <span class="table-toolbar-title">Relatórios</span>
+          <button class="btn btn-ghost btn-sm" id="btn-export-relatorio" onclick="exportRelatorioPDF()" style="display:none">
+            <span id="export-rel-icon"></span> Exportar PDF
+          </button>
+          <button class="btn btn-ghost btn-sm" id="btn-export-relatorio-csv" onclick="exportRelatorioCSV()" style="display:none">
+            <span id="export-rel-csv-icon"></span> Exportar CSV
+          </button>
+        </div>
+      </div>
       <div id="relatorios-content"><div style="text-align:center;padding:80px"><span class="spinner"></span></div></div>
     </div>
 
@@ -282,6 +296,9 @@
         <div class="table-toolbar">
           <span class="table-toolbar-title">Minha Equipe</span>
           <span id="supervisor-depto-badge" style="font-size:12px;background:var(--accent-glow);padding:4px 10px;border-radius:20px"></span>
+          <button class="btn btn-ghost btn-sm" id="btn-export-equipe" onclick="exportEquipeCSV()" title="Exportar equipe">
+            <span id="export-equipe-icon"></span> Exportar
+          </button>
         </div>
         <table>
           <thead>

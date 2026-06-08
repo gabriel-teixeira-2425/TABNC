@@ -3,8 +3,21 @@
  * CORRIGIDO ERRO 1/2: usa buildChamadosQuery centralizado
  */
 
+// Cache dos dados para exportação
+let _relatorioCache = [];
+
 async function loadRelatorios() {
   if (!can('page_relatorios')) return;
+
+  // Mostra/oculta botões de exportação
+  const btnPdf = document.getElementById('btn-export-relatorio');
+  const btnCsv = document.getElementById('btn-export-relatorio-csv');
+  const iconPdf = document.getElementById('export-rel-icon');
+  const iconCsv = document.getElementById('export-rel-csv-icon');
+  if (btnPdf) { btnPdf.style.display = can('export_data') ? 'inline-flex' : 'none'; }
+  if (btnCsv) { btnCsv.style.display = can('export_data') ? 'inline-flex' : 'none'; }
+  if (iconPdf) iconPdf.innerHTML = Icons.get('file', 14);
+  if (iconCsv) iconCsv.innerHTML = Icons.get('download', 14);
 
   const el = document.getElementById('relatorios-content');
   if (el) el.innerHTML = `<div style="text-align:center;padding:40px"><span class="spinner"></span></div>`;
@@ -14,6 +27,7 @@ async function loadRelatorios() {
       .order('data_abertura', { ascending: false });
 
     if (error) throw error;
+    _relatorioCache = ch || [];
     renderRelatorios(ch || []);
   } catch(e) {
     Notif.toast('Erro ao carregar relatórios: ' + e.message, 'error');
@@ -111,4 +125,165 @@ function renderRelatorios(ch) {
       }
     }
   );
+}
+
+// ─── Exportação de Relatórios ─────────────────────────────────────────────────
+const _DEPTOS_REL = ['', 'Financeiro', 'RH', 'TI', 'Suprimentos', 'Administrativo', 'Jurídico', 'Geral'];
+
+function exportRelatorioCSV() {
+  if (!can('export_data')) { Notif.toast('Sem permissão.', 'error'); return; }
+  const ch = _relatorioCache;
+  if (!ch.length) { Notif.toast('Nenhum dado para exportar.', 'warning'); return; }
+
+  const cabecalho = ['Protocolo','Assunto','Cliente','Empresa','Status','Prioridade','Setor','Abertura','Venc. SLA','SLA Cumprido'];
+
+  const linhas = ch.map(c => {
+    const slaOk = c.data_vencimento_sla && c.status === 'Resolvido'
+      ? (new Date(c.data_abertura) <= new Date(c.data_vencimento_sla) ? 'Sim' : 'Não')
+      : '—';
+    return [
+      c.protocolo                      || '—',
+      c.assunto                        || '—',
+      c.clientes?.nome                 || '—',
+      c.clientes?.empresa              || '—',
+      c.status                         || '—',
+      PRIO_META[c.prioridade_id]?.label || '—',
+      _DEPTOS_REL[c.departamento_id]   || '—',
+      formatDate(c.data_abertura),
+      c.data_vencimento_sla ? formatDate(c.data_vencimento_sla) : '—',
+      slaOk,
+    ];
+  });
+
+  _downloadCSVRel([cabecalho, ...linhas], `relatorio_chamados_${_tsNowRel()}.csv`);
+  Notif.toast(`Relatório com ${ch.length} chamados exportado.`, 'success');
+}
+
+function exportRelatorioPDF() {
+  if (!can('export_data')) { Notif.toast('Sem permissão.', 'error'); return; }
+  const ch = _relatorioCache;
+  if (!ch.length) { Notif.toast('Nenhum dado para exportar.', 'warning'); return; }
+
+  const now     = new Date();
+  const total   = ch.length;
+  const resolv  = ch.filter(c => c.status === 'Resolvido').length;
+  const abertos = ch.filter(c => !['Resolvido','Cancelado'].includes(c.status)).length;
+  const cancel  = ch.filter(c => c.status === 'Cancelado').length;
+  const comSla  = ch.filter(c => c.data_vencimento_sla && c.status === 'Resolvido');
+  const dentro  = comSla.filter(c => new Date(c.data_abertura) <= new Date(c.data_vencimento_sla)).length;
+  const slaRate = comSla.length ? Math.round((dentro / comSla.length) * 100) : 0;
+  const usuario = AppState.currentUser?.nome || '—';
+  const depto   = _DEPTOS_REL[AppState.currentUser?.departamento_id] || 'Todos';
+
+  const porStatus = {};
+  ch.forEach(c => { porStatus[c.status] = (porStatus[c.status] || 0) + 1; });
+
+  const porPrio = [1,2,3,4].map(p => ({
+    label: PRIO_META[p].label,
+    total: ch.filter(c => c.prioridade_id === p).length,
+  }));
+
+  // Últimos 10 chamados
+  const recentes = ch.slice(0, 10);
+
+  const linhasRecentes = recentes.map(c => `
+    <tr>
+      <td>${c.protocolo || '—'}</td>
+      <td>${escHtml(c.assunto?.substring(0,40) || '—')}</td>
+      <td>${escHtml(c.clientes?.empresa || '—')}</td>
+      <td>${c.status || '—'}</td>
+      <td>${PRIO_META[c.prioridade_id]?.label || '—'}</td>
+      <td>${formatDate(c.data_abertura)}</td>
+    </tr>`).join('');
+
+  const linhasStatus = Object.entries(porStatus).map(([s, n]) =>
+    `<tr><td>${s}</td><td style="text-align:right;font-weight:600">${n}</td><td style="text-align:right">${total ? Math.round((n/total)*100) : 0}%</td></tr>`
+  ).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório de Chamados</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size:12px; color:#1a1d2e; padding:32px; }
+  h1 { font-size:20px; font-weight:700; margin-bottom:4px; }
+  .sub { color:#666; font-size:11px; margin-bottom:24px; }
+  .metrics { display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap; }
+  .metric { flex:1; min-width:100px; border:1px solid #e0e0e0; border-radius:8px; padding:12px 16px; }
+  .metric .val { font-size:24px; font-weight:700; }
+  .metric .lbl { font-size:10px; color:#666; margin-top:2px; }
+  .blue { color:#5b8ef0; } .green { color:#34c77b; } .red { color:#f05b5b; } .yellow { color:#f0b429; }
+  h2 { font-size:13px; font-weight:600; margin:20px 0 8px; border-bottom:1px solid #e0e0e0; padding-bottom:6px; }
+  table { width:100%; border-collapse:collapse; font-size:11px; }
+  th { background:#f5f5f8; text-align:left; padding:6px 8px; font-weight:600; }
+  td { padding:5px 8px; border-bottom:1px solid #f0f0f0; }
+  .footer { margin-top:32px; font-size:10px; color:#999; border-top:1px solid #eee; padding-top:12px; }
+  @media print { body { padding:16px; } }
+</style>
+</head>
+<body>
+  <h1>Relatório de Chamados</h1>
+  <div class="sub">
+    Gerado em ${now.toLocaleString('pt-BR')} &nbsp;·&nbsp;
+    Usuário: ${escHtml(usuario)} &nbsp;·&nbsp;
+    Departamento: ${depto}
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="val blue">${total}</div><div class="lbl">Total</div></div>
+    <div class="metric"><div class="val green">${resolv}</div><div class="lbl">Resolvidos (${total ? Math.round((resolv/total)*100) : 0}%)</div></div>
+    <div class="metric"><div class="val red">${abertos}</div><div class="lbl">Em Aberto</div></div>
+    <div class="metric"><div class="val">${cancel}</div><div class="lbl">Cancelados</div></div>
+    <div class="metric"><div class="val yellow">${slaRate}%</div><div class="lbl">Conformidade SLA</div></div>
+  </div>
+
+  <h2>Distribuição por Status</h2>
+  <table>
+    <thead><tr><th>Status</th><th style="text-align:right">Qtd</th><th style="text-align:right">%</th></tr></thead>
+    <tbody>${linhasStatus}</tbody>
+  </table>
+
+  <h2>Distribuição por Prioridade</h2>
+  <table>
+    <thead><tr><th>Prioridade</th><th style="text-align:right">Qtd</th><th style="text-align:right">%</th></tr></thead>
+    <tbody>
+      ${porPrio.map(p => `<tr><td>${p.label}</td><td style="text-align:right;font-weight:600">${p.total}</td><td style="text-align:right">${total ? Math.round((p.total/total)*100) : 0}%</td></tr>`).join('')}
+    </tbody>
+  </table>
+
+  <h2>Chamados Recentes (últimos ${recentes.length})</h2>
+  <table>
+    <thead><tr><th>Protocolo</th><th>Assunto</th><th>Empresa</th><th>Status</th><th>Prioridade</th><th>Abertura</th></tr></thead>
+    <tbody>${linhasRecentes}</tbody>
+  </table>
+
+  <div class="footer">
+    Chamados-ADM &nbsp;·&nbsp; Este documento foi gerado automaticamente pelo sistema.
+  </div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 500);
+}
+
+function _downloadCSVRel(rows, filename) {
+  const bom  = '\uFEFF';
+  const csv  = bom + rows.map(r =>
+    r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')
+  ).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function _tsNowRel() {
+  return new Date().toISOString().slice(0,10);
 }

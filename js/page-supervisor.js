@@ -3,6 +3,9 @@
  * Apenas visualização, sem ações de edição
  */
 
+// Cache da equipe para exportação
+let _equipeCache = [];
+
 async function loadSupervisor() {
   if (!AppState.currentUser || AppState.currentUser.cargo !== 'Supervisor') {
     Notif.toast('Acesso restrito a Supervisores.', 'error');
@@ -15,6 +18,10 @@ async function loadSupervisor() {
   if (badge) {
     badge.innerHTML = `${Icons.get('users',12)} Departamento: ${deptoNome}`;
   }
+
+  // Ícone do botão de exportar
+  const iconEl = document.getElementById('export-equipe-icon');
+  if (iconEl) iconEl.innerHTML = Icons.get('download', 14);
 
   await carregarEquipe();
 }
@@ -42,6 +49,7 @@ async function carregarEquipe() {
 
     if (error) throw error;
 
+    _equipeCache = data || [];
     renderEquipeTable(data || []);
   } catch(e) {
     console.error('Erro:', e);
@@ -98,4 +106,36 @@ function renderEquipeTable(users) {
       </tr>
     `;
   }).join('');
+}
+// ─── Exportação da Equipe ─────────────────────────────────────────────────────
+function exportEquipeCSV() {
+  if (!can('export_data')) { Notif.toast('Sem permissão.', 'error'); return; }
+  const equipe = _equipeCache;
+  if (!equipe.length) { Notif.toast('Nenhum membro para exportar.', 'warning'); return; }
+
+  const deptoNome = getDeptName(AppState.currentUser?.departamento_id);
+  const cabecalho = ['Nome', 'E-mail', 'Cargo', 'Departamento', 'Status', 'Cadastrado em'];
+
+  const linhas = equipe.map(u => [
+    u.nome     || '—',
+    u.email    || '—',
+    u.cargo    || '—',
+    getDeptName(u.departamento_id),
+    u.ativo ? 'Ativo' : 'Inativo',
+    u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—',
+  ]);
+
+  const bom  = '\uFEFF';
+  const csv  = bom + [cabecalho, ...linhas].map(r =>
+    r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')
+  ).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `equipe_${deptoNome.toLowerCase()}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  Notif.toast(`${equipe.length} membros exportados.`, 'success');
 }

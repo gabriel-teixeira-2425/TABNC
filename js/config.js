@@ -39,6 +39,9 @@ const PERMISSIONS = {
   chamado_delete:          4,
   chamado_setor_change:    4,   // só Administrador pode redirecionar setor
 
+  // Exportação
+  export_data:             3,   // Supervisor e Administrador
+
   // Usuários
   user_view:          4,
   user_create:        4,
