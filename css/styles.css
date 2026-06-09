@@ -1254,31 +1254,214 @@ tbody tr:hover .row-actions { opacity: 1; }
   z-index: 99;
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVIDADE — Todas as breakpoints
+   Ordem: 1400 → 1280 → 1024 → 900 → 768 → 600 → 480 → 380
+   Zoom-safe: usa apenas % / rem / min() — sem px fixos em layout
+══════════════════════════════════════════════════════════════ */
+
+/* ── 1400px: sidebar mais compacta ─────────────────────────── */
+@media (max-width: 1400px) {
+  :root { --sidebar-w: 210px; }
+}
+
+/* ── 1280px ─────────────────────────────────────────────────── */
 @media (max-width: 1280px) {
   .charts-grid { grid-template-columns: 1fr 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── 1024px ─────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
+  :root { --sidebar-w: 190px; }
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-  .charts-grid { grid-template-columns: 1fr 1fr; }
+  .charts-grid  { grid-template-columns: 1fr 1fr; }
+  .page-content { padding: 20px; }
+  .topbar       { padding: 12px 20px; }
+  .td-subject   { max-width: 180px; }
+
+  /* Tabela: oculta colunas menos críticas */
+  .col-empresa,
+  thead th:nth-child(3),
+  tbody td:nth-child(3) { display: none; }
 }
+
+/* ── 900px ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .charts-grid { grid-template-columns: 1fr; }
+
+  /* Modal passa para single-column */
+  .modal-body { grid-template-columns: 1fr; }
+  .modal-main { border-right: none; border-bottom: 1px solid var(--border); }
+
+  /* Toolbar de chamados empilha filtros */
+  .table-toolbar { gap: 8px; }
+  .table-toolbar .inp-wrap,
+  .table-toolbar .inp-wrap input { width: 100% !important; }
+  #filter-status,
+  #filter-prioridade { width: 100% !important; }
+}
+
+/* ── 768px: sidebar colapsada (drawer) ─────────────────────── */
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); }
+  :root { --sidebar-w: 240px; }
+
+  /* Sidebar vira drawer */
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+    z-index: 200;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 40px #00000080;
+  }
   .sidebar-overlay.open { display: block; }
+
+  /* Main ocupa 100% */
   .main-content { margin-left: 0; }
-  .topbar { padding: 12px 16px; }
-  .page-content { padding: 16px; }
+
+  /* Topbar */
+  .topbar { padding: 10px 16px; gap: 10px; }
   .menu-toggle { display: flex; }
-  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-  .charts-grid  { grid-template-columns: 1fr; }
-  .modal-body   { grid-template-columns: 1fr; }
-  .modal-main   { border-right: none; border-bottom: 1px solid var(--border); }
-  .modal-overlay { padding: 12px; }
-  .table-toolbar { flex-direction: column; align-items: flex-start; }
-  .notif-panel  { width: 300px; right: -10px; }
+  .page-title { font-size: 17px; }
+  .page-sub   { display: none; }
+
+  /* Conteúdo */
+  .page-content { padding: 14px 16px; }
+
+  /* Metrics: 2 colunas */
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .metric-card  { padding: 16px; }
+  .metric-val   { font-size: 24px; }
+
+  /* Charts: 1 coluna */
+  .charts-grid { grid-template-columns: 1fr; }
+
+  /* Toolbar empilha */
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+  .table-toolbar-title { margin-right: 0; }
+  .table-toolbar .inp-wrap,
+  .table-toolbar .inp-wrap input { width: 100% !important; }
+  #filter-status,
+  #filter-prioridade { width: 100% !important; }
+  .table-toolbar .btn { width: 100%; justify-content: center; }
+
+  /* Tabela: scroll horizontal */
+  .table-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 560px; }
+
+  /* Modal */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0;
+    max-height: 92vh;
+  }
+  .modal-body { grid-template-columns: 1fr; }
+  .modal-main { border-right: none; border-bottom: 1px solid var(--border); }
+  .modal-header { padding: 16px 18px; }
+  .modal-main, .modal-side { padding: 16px 18px; }
+
+  /* Notif panel */
+  .notif-panel { width: calc(100vw - 20px); right: -50px; }
+
+  /* Login */
+  .login-box { padding: 32px 24px; border-radius: 16px; }
 }
+
+/* ── 600px ──────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Metrics: 2 cols pequenas */
+  .metrics-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .metric-card  { padding: 14px 12px; }
+  .metric-val   { font-size: 22px; }
+  .metric-lbl   { font-size: 11px; }
+  .metric-icon-wrap { width: 32px; height: 32px; margin-bottom: 10px; }
+
+  /* Tabela mais compacta */
+  tbody td     { padding: 10px 12px; font-size: 12px; }
+  thead th     { padding: 8px 12px; }
+
+  /* Oculta coluna de SLA em telas muito pequenas */
+  .col-sla,
+  thead th:nth-child(7),
+  tbody td:nth-child(7) { display: none; }
+
+  /* Modal em tela cheia */
+  .modal-box { max-height: 100vh; border-radius: 0; }
+
+  /* Small modals */
+  .small-modal { width: calc(100vw - 32px) !important; max-width: 100% !important; }
+
+  /* Relatorios toolbar: stack */
+  #relatorios-toolbar .table-toolbar { flex-direction: column; align-items: stretch; }
+  #relatorios-toolbar .btn { width: 100%; justify-content: center; }
+}
+
+/* ── 480px ──────────────────────────────────────────────────── */
 @media (max-width: 480px) {
+  .metrics-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .page-content { padding: 12px; }
+  .topbar       { padding: 9px 12px; }
+  .page-title   { font-size: 15px; }
+
+  /* Notif: painel ocupa toda largura com margem */
+  .notif-panel { width: calc(100vw - 16px); right: -40px; }
+
+  /* Login */
+  .login-box { padding: 28px 18px; margin: 12px; }
+  .login-title { font-size: 18px; }
+}
+
+/* ── 380px (celulares pequenos) ─────────────────────────────── */
+@media (max-width: 380px) {
   .metrics-grid { grid-template-columns: 1fr; }
+  .metric-card  { padding: 12px; }
+  .page-content { padding: 10px; }
+  .topbar       { padding: 8px 10px; }
+
+  /* Tabela scroll mais agressivo */
+  table { min-width: 480px; }
+
+  /* Oculta botões de ação da linha (só abre ao clicar) */
+  .row-actions { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ZOOM-SAFE EXTRAS
+   Previne quebras ao usar Ctrl+/- ou zoom do browser
+══════════════════════════════════════════════════════════════ */
+
+/* Impede que o main transborde horizontalmente em qualquer zoom */
+.main-content  { min-width: 0; overflow-x: hidden; }
+.page-content  { min-width: 0; overflow-x: hidden; }
+.table-card    { min-width: 0; }
+
+/* Garante que flex containers não quebrem layout no zoom */
+.topbar        { flex-wrap: wrap; min-height: 48px; }
+.topbar-right  { flex-wrap: wrap; }
+.table-toolbar { flex-wrap: wrap; }
+
+/* Textos truncam em vez de vazar */
+.table-toolbar-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60vw; }
+
+/* Tabs do modal não somem com zoom */
+.tab-bar { flex-wrap: nowrap; overflow-x: auto; }
+.tab-btn { flex-shrink: 0; }
+
+/* Sidebar: não deixa o overlay travar ao redimensionar */
+@media (min-width: 769px) {
+  .sidebar { transform: none !important; }
+  .sidebar-overlay { display: none !important; }
 }
 
 /* ══════════════════════════════════════════════════════════════

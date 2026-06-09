@@ -243,22 +243,64 @@
   #cli-metrics-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
+@media (max-width: 768px) {
+  /* Sidebar portal cliente: drawer */
+  .cli-sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+    z-index: 200;
+  }
+  .cli-sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 40px #00000080;
+  }
+  .cli-main-content { margin-left: 0 !important; }
+  .cli-topbar { padding: 10px 14px; }
+  .cli-menu-toggle { display: flex; }
+
+  /* Página de conteúdo */
+  .cli-page-content { padding: 14px 16px; }
+
+  /* Toolbar empilha */
+  .cli-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .cli-toolbar .inp-wrap,
+  .cli-toolbar .inp-wrap input { width: 100% !important; }
+
+  /* Tabela: scroll horizontal */
+  .cli-table-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cli-table-card table { min-width: 480px; }
+
+  /* Modal em sheet */
+  #cli-modal-overlay { padding: 0; align-items: flex-end; }
+  #cli-modal-overlay .modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 92vh;
+  }
+
+  /* Login tipo selector */
+  .login-tipo-selector { gap: 8px; }
+  .login-tipo-btn { padding: 10px 8px; font-size: 11px; }
+  .login-tipo-btn .tipo-icon { width: 28px; height: 28px; }
+}
+
 @media (max-width: 520px) {
   #cli-metrics-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
 }
 
-/* ── Responsividade mobile específica do portal cliente ─────── */
-@media (max-width: 768px) {
-  .login-tipo-selector { gap: 8px; }
-  .login-tipo-btn { padding: 10px 8px; font-size: 11px; }
-  .login-tipo-btn .tipo-icon { width: 28px; height: 28px; }
+@media (max-width: 380px) {
+  #cli-metrics-grid { grid-template-columns: 1fr; }
+  .cli-page-content { padding: 10px; }
+}
 
-  #cli-modal-overlay .modal {
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
-    border-radius: 0;
-  }
+/* ── Zoom-safe portal cliente ──────────────────────────────── */
+.cli-main-content { min-width: 0; overflow-x: hidden; }
+.cli-page-content { min-width: 0; }
+.cli-table-card   { min-width: 0; }
+
+@media (min-width: 769px) {
+  .cli-sidebar { transform: none !important; }
 }
 
 /* ── Tema claro — overrides para portal cliente ─────────────── */
