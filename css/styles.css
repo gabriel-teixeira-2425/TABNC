@@ -1553,3 +1553,122 @@ tbody tr:hover .row-actions { opacity: 1; }
 
 /* ── Página Perfil ─────────────────────────────────────────── */
 /* reutiliza estilos existentes (table-card, field, btn) */
+/* ============================================================
+   CORREÇÕES RESPONSIVAS - APENAS TABELA ROLA EM MOBILE
+   ============================================================ */
+
+/* 1. Wrapper para scroll apenas na tabela */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+/* 2. Estilização da scrollbar (opcional, só pra ficar bonito) */
+.table-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+.table-wrapper::-webkit-scrollbar-track {
+  background: var(--border-md);
+  border-radius: 4px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 4px;
+}
+
+/* 3. Garante que a página não role em mobile */
+@media (max-width: 768px) {
+  .page-content {
+    overflow-x: hidden;
+  }
+  .table-card {
+    overflow: visible !important;
+  }
+  .table-wrapper {
+    margin: 0 -8px;
+    padding: 0 8px;
+    width: calc(100% + 16px);
+  }
+}
+/* ============================================================
+   CORREÇÕES RESPONSIVAS - APENAS TABELA ROLA EM MOBILE
+   ============================================================ */
+
+/* 1. Wrapper para scroll apenas na tabela */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+/* 2. Estilização da scrollbar (opcional, só pra ficar bonito) */
+.table-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+.table-wrapper::-webkit-scrollbar-track {
+  background: var(--border-md);
+  border-radius: 4px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 4px;
+}
+
+/* 3. Garante que a página não role em mobile */
+@media (max-width: 768px) {
+  .page-content {
+    overflow-x: hidden;
+  }
+  .table-card {
+    overflow: visible !important;
+  }
+  .table-wrapper {
+    margin: 0 -8px;
+    padding: 0 8px;
+    width: calc(100% + 16px);
+  }
+}
+/* ── CORREÇÃO DA PÁGINA NOVO CHAMADO MANUAL EM MOBILE ── */
+@media (max-width: 768px) {
+  #page-novo-chamado .table-card {
+    padding: 16px !important;
+  }
+  
+  #page-novo-chamado .field-input-wrap input,
+  #page-novo-chamado .field-input-wrap textarea,
+  #page-novo-chamado .inp {
+    font-size: 14px !important;
+    padding: 10px 12px 10px 36px !important;
+  }
+  
+  #page-novo-chamado .field-input-icon {
+    left: 10px !important;
+  }
+  
+  /* Grid de Departamento + Responsável empilha em mobile */
+  #page-novo-chamado div[style*="display:grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  /* Botões ficam empilhados e ocupam toda largura */
+  #page-novo-chamado div[style*="justify-content:flex-end"] {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  
+  #page-novo-chamado div[style*="justify-content:flex-end"] .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  /* Dropdown de cliente fica mais largo */
+  #nc-cliente-dropdown {
+    max-height: 200px !important;
+  }
+  
+  .quick-pop-item {
+    padding: 10px 12px !important;
+  }
+}

@@ -155,6 +155,15 @@ function renderCharts(chamados) {
       }
     }
   );
+  let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    if (AppState.charts.status) AppState.charts.status.resize();
+    if (AppState.charts.prioridade) AppState.charts.prioridade.resize();
+    if (AppState.charts.tendencia) AppState.charts.tendencia.resize();
+  }, 150);
+});
 }
 
 function renderRecentTable(chamados) {

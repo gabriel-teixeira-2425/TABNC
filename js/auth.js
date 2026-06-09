@@ -159,10 +159,10 @@ function startAutoRefresh(intervalMs) {
 
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display          = 'block';
+  document.getElementById('app').style.display = 'block';
   navigate('dashboard');
 
-  // Lê preferência salva (padrão: 60s)
-  const savedInterval = parseInt(localStorage.getItem('pref_autorefresh') || '60000');
+  // CORRIGIDO: padrão 600000 (10 minutos), NÃO 60000 (1 minuto)
+  const savedInterval = parseInt(localStorage.getItem('pref_autorefresh') || '600000');
   startAutoRefresh(savedInterval);
 }

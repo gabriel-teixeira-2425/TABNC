@@ -5,7 +5,7 @@
 const PREFS = {
   theme:        { key: 'pref_theme',       default: 'dark'  },
   pagesize:     { key: 'pref_pagesize',    default: '15'    },
-  autorefresh:  { key: 'pref_autorefresh', default: '600000' },
+  autorefresh:  { key: 'pref_autorefresh', default: '600000' }, // 10 minutos
 };
 
 function getPref(name) {
