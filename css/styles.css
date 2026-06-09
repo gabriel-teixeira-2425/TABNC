@@ -1672,3 +1672,12 @@ tbody tr:hover .row-actions { opacity: 1; }
     padding: 10px 12px !important;
   }
 }
+
+/* ── INPUT DATE — tema escuro ───────────────────────────────── */
+input[type=date].inp {
+  color-scheme: dark;
+}
+[data-theme=light] input[type=date].inp {
+  color-scheme: light;
+}
+

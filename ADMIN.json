@@ -1,0 +1,548 @@
+{
+  "name": "ADMIN",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"protocolo\": \"{{ $json.protocolo }}\",\n  \"prioridade_id\": \"{{ $json.prioridade_id }}\",\n  \"status\": \"Chamado aberto\",\n  \"mensagem\": \"Seu chamado foi registrado. Protocolo: {{ $json.protocolo }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2240,
+        192
+      ],
+      "id": "c4183bb5-de04-4ed9-b48b-7f4988574d0e",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chamados",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        208
+      ],
+      "id": "d94f82d6-6e18-440f-8f10-343f2dd15fea",
+      "name": "Receber Chamado",
+      "webhookId": "9221dffc-6fe4-45f8-9f52-c4596e9f4a3e",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Código CORRIGIDO para o nó \"Extrair Dados do Cliente\"\nconst inputData = $input.first().json;\n\n// Extrair dados crus\nlet assunto = inputData.assunto || inputData.body?.assunto || 'Sem assunto';\nlet mensagem = inputData.mensagem || inputData.body?.mensagem || inputData.conteudo || '';\nlet clienteNome = inputData.cliente?.nome || inputData.nome || inputData.body?.cliente?.nome || '';\nlet clienteEmail = inputData.cliente?.email || inputData.email || inputData.body?.cliente?.email || '';\nlet clienteTelefone = inputData.cliente?.telefone || inputData.telefone || inputData.body?.cliente?.telefone || '';\nlet clienteEmpresa = inputData.cliente?.empresa || inputData.empresa || inputData.body?.cliente?.empresa || '';\nlet clienteCargo = inputData.cliente?.cargo || inputData.cargo || inputData.body?.cliente?.cargo || '';\nlet clienteDocumento = inputData.cliente?.documento || inputData.documento || inputData.body?.cliente?.documento || '';\nlet clienteDepartamento = inputData.cliente?.departamento || inputData.departamento || inputData.body?.cliente?.departamento || '';\nlet origem = inputData.origem || inputData.body?.origem || 'desconhecido';\n\n// 🔥 CORREÇÃO: Priorizar departamento para portal do cliente\nlet setorChamado;\n\nif (origem === 'portal_cliente') {\n  // Portal do Cliente: usa o departamento selecionado pelo cliente\n  setorChamado = inputData.departamento || \n                 inputData.body?.departamento || \n                 clienteDepartamento || \n                 'Geral';\n  console.log('🏷️ Portal Cliente - Departamento selecionado:', setorChamado);\n} else {\n  // Admin manual: usa o setor informado\n  setorChamado = inputData.setor || \n                 inputData.departamento || \n                 inputData.body?.setor || \n                 clienteDepartamento || \n                 'Geral';\n}\n\nlet canal = inputData.canal || inputData.body?.canal || inputData.origem || 'desconhecido';\n\n// Log para debug\nconsole.log('📝 Nome recebido:', clienteNome);\nconsole.log('🏢 Empresa recebida:', clienteEmpresa);\nconsole.log('🏷️ Setor informado:', setorChamado);\nconsole.log('📱 Origem:', origem);\n\nconst resultado = {\n  dados_brutos: inputData,\n  extraido: {\n    assunto: assunto,\n    mensagem: mensagem,\n    cliente: {\n      nome: clienteNome,\n      email: clienteEmail.toLowerCase().trim(),\n      telefone: clienteTelefone,\n      empresa: clienteEmpresa,\n      cargo: clienteCargo,\n      documento: clienteDocumento,\n      departamento: clienteDepartamento\n    },\n    setor: setorChamado,  // ← Agora com a prioridade correta\n    canal: canal,\n    origem: origem  // ← Adicionado para rastreamento\n  },\n  recebido_em: new Date().toISOString(),\n  status: 'dados_extraidos'\n};\n\nreturn resultado;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        208
+      ],
+      "id": "1028c528-0b7a-414c-867a-a2f6ce783656",
+      "name": "Extrair Dados do Cliente"
+    },
+    {
+      "parameters": {
+        "url": "https://hwyzqacspefbhllfwito.supabase.co/rest/v1/clientes",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "=eq.{{ $json.extraido.cliente.email }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3eXpxYWNzcGVmYmhsbGZ3aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTYwMzEsImV4cCI6MjA5NTg5MjAzMX0.KWpvN3fTawJ8nDe7RulmY6nX1-5pvOaQbCrz_LN_xSE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3eXpxYWNzcGVmYmhsbGZ3aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTYwMzEsImV4cCI6MjA5NTg5MjAzMX0.KWpvN3fTawJ8nDe7RulmY6nX1-5pvOaQbCrz_LN_xSE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -304,
+        208
+      ],
+      "id": "668250fb-c1da-4fc3-8b1c-61d84fcdaf54",
+      "name": "Buscar Cliente por Email",
+      "retryOnFail": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega os dados do HTTP Request (resultado da busca)\nconst resultadoBusca = $input.first().json;\n\n// Pega os dados do cliente do PRIMEIRO Code\nconst dadosCliente = $('Extrair Dados do Cliente').first().json.extraido.cliente;\n\n// 🔥 PEGA O departamento_id DIRETAMENTE do nó Mapear setor 🔥\nconst departamento_id = $('Mapear setor').first().json.departamento_id;\n\nlet precisaCriar = false;\nlet clienteId = null;\n\nconsole.log('RESULTADO BUSCA:', JSON.stringify(resultadoBusca));\nconsole.log('🔴 DECIDIR - departamento_id do Mapear setor:', departamento_id);\n\n// Verifica se encontrou cliente\nif (resultadoBusca && Array.isArray(resultadoBusca) && resultadoBusca.length > 0) {\n  clienteId = resultadoBusca[0].id;\n  precisaCriar = false;\n  console.log('✅ Cliente encontrado! ID:', clienteId);\n} else if (resultadoBusca && !Array.isArray(resultadoBusca) && resultadoBusca.id) {\n  clienteId = resultadoBusca.id;\n  precisaCriar = false;\n  console.log('✅ Cliente encontrado! ID:', clienteId);\n} else {\n  precisaCriar = true;\n  console.log('❌ Cliente NÃO encontrado. Vai criar:', dadosCliente.email);\n}\n\nreturn {\n  precisaCriar: precisaCriar,\n  clienteId: clienteId,\n  dadosCliente: dadosCliente,\n  departamento_id: departamento_id  // ← VEM DO MAPEADOR!\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        208
+      ],
+      "id": "0257f9b2-0a5b-449b-82e4-926c11f0cd91",
+      "name": "Decidir se Cria Cliente"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ed8e2e97-fcc8-43a4-a692-0e67727324b2",
+              "leftValue": "={{ $json.precisaCriar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        96,
+        208
+      ],
+      "id": "408c0068-c6c1-4a63-9335-3ce2281f4020",
+      "name": "Precisa Criar Cliente?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hwyzqacspefbhllfwito.supabase.co/rest/v1/clientes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3eXpxYWNzcGVmYmhsbGZ3aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTYwMzEsImV4cCI6MjA5NTg5MjAzMX0.KWpvN3fTawJ8nDe7RulmY6nX1-5pvOaQbCrz_LN_xSE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3eXpxYWNzcGVmYmhsbGZ3aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTYwMzEsImV4cCI6MjA5NTg5MjAzMX0.KWpvN3fTawJ8nDe7RulmY6nX1-5pvOaQbCrz_LN_xSE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"id\": \"{{ $json.auth_cliente_id || undefined }}\",\n  \"nome\": \"{{ $json.dadosCliente.nome }}\",\n  \"email\": \"{{ $json.dadosCliente.email }}\",\n  \"telefone\": \"{{ $json.dadosCliente.telefone }}\",\n  \"empresa\": \"{{ $json.dadosCliente.empresa }}\",\n  \"cargo\": \"{{ $json.dadosCliente.cargo }}\",\n  \"documento\": \"{{ $json.dadosCliente.documento }}\",\n  \"departamento\": \"{{ $json.dadosCliente.departamento || 'Geral' }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        816,
+        -64
+      ],
+      "id": "fb40a0b3-5ef3-4d14-bf39-84824a022823",
+      "name": "Criar Cliente",
+      "jsonBody": "={\n  \"id\": \"{{ $json.auth_cliente_id || undefined }}\",\n  \"nome\": \"{{ $json.dadosCliente.nome }}\",\n  \"email\": \"{{ $json.dadosCliente.email }}\",\n  \"telefone\": \"{{ $json.dadosCliente.telefone }}\",\n  \"empresa\": \"{{ $json.dadosCliente.empresa }}\",\n  \"cargo\": \"{{ $json.dadosCliente.cargo }}\",\n  \"documento\": \"{{ $json.dadosCliente.documento }}\",\n  \"departamento\": \"{{ $json.dadosCliente.departamento || 'Geral' }}\"\n}"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1408,
+        192
+      ],
+      "id": "9f18d1bc-3e53-4706-bd1c-1d1dfe8d9348",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hwyzqacspefbhllfwito.supabase.co/rest/v1/chamados",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3eXpxYWNzcGVmYmhsbGZ3aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTYwMzEsImV4cCI6MjA5NTg5MjAzMX0.KWpvN3fTawJ8nDe7RulmY6nX1-5pvOaQbCrz_LN_xSE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3eXpxYWNzcGVmYmhsbGZ3aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTYwMzEsImV4cCI6MjA5NTg5MjAzMX0.KWpvN3fTawJ8nDe7RulmY6nX1-5pvOaQbCrz_LN_xSE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"cliente_id\": \"{{ $json.cliente_id }}\",\n  \"canal_id\": \"{{ $json.canal_id }}\",\n  \"assunto\": \"{{ $json.assunto }}\",\n  \"mensagem_original\": \"{{ $json.mensagem_original }}\",\n  \"prioridade_id\": \"{{ $json.prioridade_id }}\",\n  \"status\": \"{{ $json.status }}\",\n  \"departamento_id\": \"{{ $json.departamento_id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2032,
+        192
+      ],
+      "id": "e7694c5c-423e-4e36-a1d5-f1e2147e0274",
+      "name": "Criar Chamado"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega os dados do chamado\nconst dadosCliente = $('Extrair Dados do Cliente').first().json.extraido;\nconst mensagem = dadosCliente.mensagem.toLowerCase();\nconst assunto = dadosCliente.assunto.toLowerCase();\nconst textoCompleto = mensagem + \" \" + assunto;\n\n// INICIALIZA as variáveis\nlet prioridade_id = 1; // baixa padrão\nlet motivo = \"Classificação padrão (média prioridade)\";\nlet palavrasEncontradas = [];\n\n// ============================================\n// INFORMAÇÕES DE HORÁRIO (apenas para registro)\n// ============================================\nconst hora = new Date().getHours();\nconst diaSemana = new Date().getDay();\nconst isHorarioComercial = (hora >= 8 && hora <= 18);\nconst isFimDeSemana = (diaSemana === 0 || diaSemana === 6);\n\nif (!isHorarioComercial) {\n  console.log(`📅 Chamado recebido fora do horário comercial (${hora}h)`);\n  palavrasEncontradas.push('fora-horario');\n}\n\nif (isFimDeSemana) {\n  console.log(`📅 Chamado recebido em fim de semana`);\n  palavrasEncontradas.push('fim-de-semana');\n}\n\n// ============================================\n// CRÍTICA (4) - Sistemas parados, emergências\n// ============================================\nconst palavrasCriticas = [\n  'sem energia', 'falta energia', 'energia caiu', 'luz apagou', 'no-break',\n  'sem internet', 'internet caiu', 'rede caiu', 'wifi fora', 'conexão falhou',\n  'servidor caiu', 'servidor fora', 'servidor parado', 'data center',\n  'sistema fora', 'sistema parado', 'fora do ar', 'não funciona', 'tudo parado',\n  'produção parada', 'fábrica parada', 'linha parada', 'site fora', 'app fora',\n  'emergência', 'crítico', 'urgentíssimo', 'desesperador',\n  'invasão', 'hackeado', 'vazamento de dados', 'ransomware', 'vírus',\n  'dados perdidos', 'backup falhou', 'arquivo corrompido',\n  'disco queimou', 'fonte queimou', 'incêndio', 'enchente', 'curto-circuito'\n];\n\nfor (const palavra of palavrasCriticas) {\n  if (textoCompleto.includes(palavra)) {\n    prioridade_id = 4;\n    motivo = \"CRÍTICA: Sistema inoperante ou emergência detectada\";\n    palavrasEncontradas.push(palavra);\n    break;\n  }\n}\n\n// ============================================\n// ALTA (3) - Urgente, mas não crítico\n// ============================================\nif (prioridade_id === 2) {\n  const palavrasAlta = [\n    'urgente', 'asap', 'rápido', 'quanto antes', 'imediatamente', 'com urgência',\n    'não consigo trabalhar', 'improdutivo', 'parado parcialmente',\n    'atrasado', 'prazo', 'deadline', 'vencimento', 'prejuízo', 'multa',\n    'cliente insatisfeito', 'reclamação', 'nervoso',\n    'bug', 'erro', 'falha', 'inconsistência', 'tela azul', 'crash', 'travou',\n    'lentidão', 'demora', 'não carrega', 'não abre', 'não salva',\n    'não consigo logar', 'login falhou', 'senha não funciona',\n    'pagamento não processado', 'boleto não gerou', 'transação falhou'\n  ];\n  \n  for (const palavra of palavrasAlta) {\n    if (textoCompleto.includes(palavra)) {\n      prioridade_id = 3;\n      motivo = \"ALTA: Urgência ou impacto significativo\";\n      palavrasEncontradas.push(palavra);\n      break;\n    }\n  }\n}\n\n// ============================================\n// BAIXA (1) - Dúvidas, orientações\n// ============================================\nif (prioridade_id === 2) {\n  const palavrasBaixa = [\n    'dúvida', 'como faço', 'como posso', 'como eu', 'qual é',\n    'ajuda', 'orientação', 'instrução', 'explicação', 'me ensina',\n    'tutorial', 'documentação', 'manual', 'passo a passo', 'guia',\n    'sugestão', 'melhoria', 'nova funcionalidade', 'ideia',\n    'consulta', 'verificar', 'confirmar', 'validar', 'agradecimento', 'obrigado'\n  ];\n  \n  for (const palavra of palavrasBaixa) {\n    if (textoCompleto.includes(palavra)) {\n      prioridade_id = 1;\n      motivo = \"BAIXA: Dúvida ou solicitação de informação\";\n      palavrasEncontradas.push(palavra);\n      break;\n    }\n  }\n}\n\n// ============================================\n// REGRAS ESPECIAIS\n// ============================================\n\n// Financeiro sobe prioridade\nconst palavrasFinanceiro = ['pagamento', 'boleto', 'fatura', 'nota fiscal', 'reembolso'];\nfor (const palavra of palavrasFinanceiro) {\n  if (textoCompleto.includes(palavra) && prioridade_id < 3) {\n    prioridade_id = 3;\n    motivo += \" + Assunto financeiro\";\n    palavrasEncontradas.push(palavra + '(financeiro)');\n    break;\n  }\n}\n\n// ============================================\n// LOG PARA DEBUG\n// ============================================\nconsole.log('=' .repeat(50));\nconsole.log('CLASSIFICAÇÃO DE PRIORIDADE:');\nconsole.log(`Horário comercial: ${isHorarioComercial ? 'Sim' : 'Não'} (${hora}h)`);\nconsole.log(`Fim de semana: ${isFimDeSemana ? 'Sim' : 'Não'}`);\nconsole.log(`Prioridade: ${prioridade_id}`);\nconsole.log(`Motivo: ${motivo}`);\nconsole.log(`Palavras: ${palavrasEncontradas.join(', ')}`);\nconsole.log('=' .repeat(50));\n\n// ============================================\n// PREPARA DADOS PARA SAÍDA\n// ============================================\nconst inputData = $input.first().json;\n\n// Preserva o clienteId vindo do Merge\nconst clienteId = inputData.clienteId || null;\n\n// 🔥 PRESERVA O departamento_id que veio do Mapear setor 🔥\nconst departamento_id = inputData.departamento_id || 7;\n\nconsole.log(`🔴 CLASSIFICAR - departamento_id recebido: ${inputData.departamento_id}`);\nconsole.log(`🔴 CLASSIFICAR - departamento_id final: ${departamento_id}`);\n\nreturn {\n  clienteId: clienteId,\n  prioridade_id: prioridade_id,\n  prioridade_motivo: motivo,\n  palavras_chave: palavrasEncontradas,\n  assunto: dadosCliente.assunto,\n  mensagem_original: dadosCliente.mensagem,\n  canal: dadosCliente.canal,\n  dadosCliente: dadosCliente.cliente,\n  metadata_horario: {\n    hora: hora,\n    horario_comercial: isHorarioComercial,\n    fim_de_semana: isFimDeSemana\n  },\n  departamento_id: departamento_id  // ← LINHA ADICIONADA!\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        192
+      ],
+      "id": "bf447141-af0b-4c44-bf87-01cfc13c37bd",
+      "name": "Classificar Prioridade"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// No ramo TRUE, o cliente acabou de ser criado\nconst clienteId = data[0]?.id || data.id;\n\n// 🔥 DEPARTAMENTO_ID VEM DO Decidir se Cria Cliente (via Criar Cliente) 🔥\nconst departamento_id = data.departamento_id;\n\nconsole.log('Ramo TRUE - Cliente ID:', clienteId);\nconsole.log('Ramo TRUE - departamento_id:', departamento_id);\n\nreturn {\n  clienteId: clienteId,\n  dadosCliente: {\n    nome: data.nome,\n    email: data.email,\n    telefone: data.telefone\n  },\n  departamento_id: departamento_id\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        -64
+      ],
+      "id": "f02559f6-16f8-4a62-86e4-048ecef27da3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// 🔥 DEPARTAMENTO_ID VEM DO Decidir se Cria Cliente 🔥\nconst departamento_id = data.departamento_id;\n\nconsole.log('Ramo FALSE - clienteId:', data.clienteId);\nconsole.log('Ramo FALSE - departamento_id:', departamento_id);\n\nlet clienteId = data.clienteId;\n\nreturn {\n  clienteId: clienteId,\n  dadosCliente: data.dadosCliente,\n  departamento_id: departamento_id\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        384
+      ],
+      "id": "daadc2af-d29d-4265-8384-123dce21683e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json;\n\nconsole.log('=' .repeat(50));\nconsole.log('FORÇAR CLIENTE ID - DADOS RECEBIDOS:');\nconsole.log(JSON.stringify(inputData, null, 2));\nconsole.log('=' .repeat(50));\n\nlet clienteId = inputData.clienteId;\n\nif (!clienteId && inputData.dadosCliente && inputData.dadosCliente.id) {\n  clienteId = inputData.dadosCliente.id;\n}\n\nconsole.log('Cliente ID final:', clienteId);\nconsole.log('Departamento ID recebido:', inputData.departamento_id);\n\nif (!clienteId) {\n  throw new Error('clienteId não encontrado. Dados: ' + JSON.stringify(inputData));\n}\n\n// 🔥 NOVO: Mapear canal para ID\nconst canalMap = {\n  'whatsapp': 1,\n  'email': 2,\n  'teams': 3,\n  'formulário': 4,\n  'formulario': 4,\n  'telefone': 5,\n  'desconhecido': 1  // padrão WhatsApp\n};\n\n// Pega o canal do inputData (vem do nó Extrair Dados do Cliente)\nlet canalNome = (inputData.canal || 'whatsapp').toLowerCase().trim();\n// Remove acentos para mapeamento\ncanalNome = canalNome.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\nconst canalId = canalMap[canalNome] || 1;\n\nconsole.log(`📞 Canal identificado: \"${inputData.canal}\" → ID: ${canalId}`);\n\n// 🔥 USAR o departamento_id que veio do Mapear setor\nconst departamento_id = inputData.departamento_id || 7;\n\nconsole.log(`✅ Departamento ID final: ${departamento_id}`);\n\nreturn {\n  cliente_id: clienteId,\n  canal_id: canalId,  // ← AGORA DINÂMICO!\n  assunto: inputData.assunto,\n  mensagem_original: inputData.mensagem_original,\n  prioridade_id: inputData.prioridade_id || 2,\n  status: \"Novo\",\n  departamento_id: departamento_id\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        192
+      ],
+      "id": "28ea7898-39be-4724-a388-98cdf60eec72",
+      "name": "Forçar Cliente ID"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nó \"Mapear setor\" - Versão CORRIGIDA com suporte a ID direto e melhor debug\nconst inputData = $input.first().json;\n\nconsole.log('=' .repeat(50));\nconsole.log('🏷️ MAPEAMENTO DE SETOR');\nconsole.log('=' .repeat(50));\n\n// 🔥 NOVO: Se já veio como número (ID do departamento), usa direto\nif (inputData.departamento_id && typeof inputData.departamento_id === 'number' && inputData.departamento_id >= 1 && inputData.departamento_id <= 7) {\n  const deptoMapIdToName = {\n    1: 'Financeiro', 2: 'RH', 3: 'TI', 4: 'Suprimentos',\n    5: 'Administrativo', 6: 'Jurídico', 7: 'Geral'\n  };\n  const nomeSetor = deptoMapIdToName[inputData.departamento_id];\n  console.log(`✅ Já veio com departamento_id: ${inputData.departamento_id} → ${nomeSetor}`);\n  \n  return {\n    ...inputData,\n    departamento_id: inputData.departamento_id,\n    nome_setor_original: nomeSetor,\n    setor_normalizado: nomeSetor.toLowerCase(),\n    mapeado_em: new Date().toISOString(),\n    veio_como_id: true\n  };\n}\n\n// Pega o setor de diferentes lugares possíveis\nlet setor = inputData.extraido?.setor || \n           inputData.setor || \n           inputData.extraido?.cliente?.departamento || \n           inputData.departamento ||\n           'Geral';\n\nconsole.log('Setor ORIGINAL:', JSON.stringify(setor));\nconsole.log('Origem do chamado:', inputData.extraido?.origem || inputData.origem || 'desconhecido');\nconsole.log('Tipo:', typeof setor);\n\n// Garantir que setor é string\nif (!setor || typeof setor !== 'string') {\n  setor = 'Geral';\n  console.log('⚠️ Setor inválido, usando padrão: Geral');\n}\n\n// Converter para minúsculo e limpar\nconst setorLower = setor.toLowerCase().trim();\nconsole.log(`Setor normalizado: \"${setorLower}\"`);\n\n// Mapeamento direto\nlet departamento_id = null;\n\nif (setorLower === 'financeiro' || setorLower === 'finanças' || setorLower === 'financas') {\n  departamento_id = 1;\n  console.log('🎯 Financeiro → ID 1');\n}\nelse if (setorLower === 'rh' || setorLower === 'recursos humanos' || setorLower === 'hr') {\n  departamento_id = 2;\n  console.log('🎯 RH → ID 2');\n}\nelse if (setorLower === 'ti' || setorLower === 'tecnologia' || setorLower === 'informática' || setorLower === 'informatica' || setorLower === 'it') {\n  departamento_id = 3;\n  console.log('🎯 TI → ID 3');\n}\nelse if (setorLower === 'suprimentos' || setorLower === 'suprimentos' || setorLower === 'compras' || setorLower === 'logística' || setorLower === 'logistica' || setorLower === 'supply') {\n  departamento_id = 4;\n  console.log('🎯 Suprimentos → ID 4');\n}\nelse if (setorLower === 'administrativo' || setorLower === 'adm' || setorLower === 'admin' || setorLower === 'administracao') {\n  departamento_id = 5;\n  console.log('🎯 Administrativo → ID 5');\n}\nelse if (setorLower === 'jurídico' || setorLower === 'juridico' || setorLower === 'legal') {\n  departamento_id = 6;\n  console.log('🎯 Jurídico → ID 6');\n}\nelse if (setorLower === 'geral' || setorLower === 'general' || setorLower === '') {\n  departamento_id = 7;\n  console.log('🎯 Geral → ID 7');\n}\nelse {\n  // Busca parcial para palavras próximas\n  if (setorLower.includes('suprimento') || setorLower.includes('compras') || setorLower.includes('logist')) {\n    departamento_id = 4;\n    console.log('🎯 Suprimentos (parcial) → ID 4');\n  }\n  else if (setorLower.includes('finance') || setorLower.includes('financ')) {\n    departamento_id = 1;\n    console.log('🎯 Financeiro (parcial) → ID 1');\n  }\n  else if (setorLower.includes('tecno') || setorLower.includes('inform')) {\n    departamento_id = 3;\n    console.log('🎯 TI (parcial) → ID 3');\n  }\n  else if (setorLower.includes('admin')) {\n    departamento_id = 5;\n    console.log('🎯 Administrativo (parcial) → ID 5');\n  }\n  else if (setorLower.includes('jurid')) {\n    departamento_id = 6;\n    console.log('🎯 Jurídico (parcial) → ID 6');\n  }\n  else if (setorLower.includes('rh') || setorLower.includes('recurs')) {\n    departamento_id = 2;\n    console.log('🎯 RH (parcial) → ID 2');\n  }\n  else {\n    departamento_id = 7;\n    console.log(`⚠️ Setor \"${setor}\" não reconhecido, usando Geral (ID 7)`);\n  }\n}\n\nconsole.log('=' .repeat(50));\nconsole.log(`✅ RESULTADO: \"${setor}\" → departamento_id: ${departamento_id}`);\nconsole.log('=' .repeat(50));\n\n// Retornar os dados atualizados\nreturn {\n  ...inputData,\n  departamento_id: departamento_id,\n  nome_setor_original: setor,\n  setor_normalizado: setorLower,\n  mapeado_em: new Date().toISOString(),\n  veio_como_id: false\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        208
+      ],
+      "id": "6538bb5b-3133-4891-ab51-ccded8ce03e3",
+      "name": "Mapear setor"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hwyzqacspefbhllfwito.supabase.co/auth/v1/signup",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3eXpxYWNzcGVmYmhsbGZ3aXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMTYwMzEsImV4cCI6MjA5NTg5MjAzMX0.KWpvN3fTawJ8nDe7RulmY6nX1-5pvOaQbCrz_LN_xSE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": \"{{ $json.dadosCliente.email }}\",\n  \"password\": \"123456\",\n  \"data\": {\n    \"name\": \"{{ $json.dadosCliente.nome }}\",\n    \"tipo\": \"cliente\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        352,
+        -64
+      ],
+      "id": "579c63b9-1844-454d-88e5-8518400e5347",
+      "name": "Criar Auth Cliente",
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const authResp = $input.first().json;\nconst dadosCliente = $('Decidir se Cria Cliente').first().json;\n\n// Supabase signUp retorna { id, email, ... } em caso de sucesso\n// ou { msg: 'User already registered' } se já existe\nlet authClienteId = authResp?.id || authResp?.user?.id || null;\n\nif (!authClienteId && authResp?.msg?.toLowerCase().includes('already registered')) {\n  console.log('⚠️ Auth: cliente já registrado, prosseguindo sem ID do Auth');\n} else if (authClienteId) {\n  console.log('✅ Auth criado para cliente:', authClienteId);\n} else {\n  console.log('⚠️ Auth: resposta inesperada:', JSON.stringify(authResp));\n}\n\nreturn {\n  ...dadosCliente,\n  auth_cliente_id: authClienteId\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        -64
+      ],
+      "id": "a4811666-f355-4298-b3a2-3dd684ab213e",
+      "name": "Extrair Auth ID Cliente"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receber Chamado": {
+      "main": [
+        [
+          {
+            "node": "Extrair Dados do Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Dados do Cliente": {
+      "main": [
+        [
+          {
+            "node": "Mapear setor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Cliente por Email": {
+      "main": [
+        [
+          {
+            "node": "Decidir se Cria Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decidir se Cria Cliente": {
+      "main": [
+        [
+          {
+            "node": "Precisa Criar Cliente?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precisa Criar Cliente?": {
+      "main": [
+        [
+          {
+            "node": "Criar Auth Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Cliente": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Classificar Prioridade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Chamado": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classificar Prioridade": {
+      "main": [
+        [
+          {
+            "node": "Forçar Cliente ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Forçar Cliente ID": {
+      "main": [
+        [
+          {
+            "node": "Criar Chamado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapear setor": {
+      "main": [
+        [
+          {
+            "node": "Buscar Cliente por Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Auth Cliente": {
+      "main": [
+        [
+          {
+            "node": "Extrair Auth ID Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Auth ID Cliente": {
+      "main": [
+        [
+          {
+            "node": "Criar Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7c94ed11-cae0-41df-9e3a-366b605d9081",
+  "meta": {
+    "instanceId": "949806eb0a7b52f94523dc3b118b7349cb3cff57745e77bff418a522fcf7d398"
+  },
+  "id": "LKjQMQmBHeLGUG4U",
+  "tags": []
+}
