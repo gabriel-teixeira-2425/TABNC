@@ -96,8 +96,8 @@ function renderRelatorios(ch) {
       </div>
     </div>
 
-    <div class="charts-grid" style="margin-bottom:24px">
-      <div class="chart-card">
+    <div class="charts-grid" style="margin-bottom:24px;grid-template-columns:auto 1fr">
+      <div class="chart-card" style="min-width:220px">
         <div class="chart-header"><div class="chart-title">Distribuição por Prioridade</div></div>
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
           ${porPrio.map(p => `
