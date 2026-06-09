@@ -3,8 +3,24 @@
  * CORRIGIDO ERRO 1/2: usa buildChamadosQuery centralizado
  */
 
-// Cache dos dados para exportação
+// Cache dos dados para exportação e para recriar gráfico ao mudar zoom
 let _relatorioCache = [];
+
+// ─── Correção de distorção ao mudar zoom do browser ───────────────────────────
+let _relZoomMql = null;
+
+function _watchRelZoom() {
+  if (_relZoomMql) {
+    try { _relZoomMql.removeEventListener('change', _onRelZoom); } catch (_) {}
+  }
+  _relZoomMql = window.matchMedia('(resolution: ' + window.devicePixelRatio + 'dppx)');
+  _relZoomMql.addEventListener('change', _onRelZoom);
+}
+
+function _onRelZoom() {
+  if (AppState.charts.rel30d) { AppState.charts.rel30d.destroy(); AppState.charts.rel30d = null; }
+  if (_relatorioCache.length) renderRelatorios(_relatorioCache);
+}
 
 async function loadRelatorios() {
   if (!can('page_relatorios')) return;
@@ -125,6 +141,9 @@ function renderRelatorios(ch) {
       }
     }
   );
+
+  // Registra watcher de zoom após criar o gráfico
+  _watchRelZoom();
 }
 
 // ─── Exportação de Relatórios ─────────────────────────────────────────────────
@@ -183,7 +202,6 @@ function exportRelatorioPDF() {
     total: ch.filter(c => c.prioridade_id === p).length,
   }));
 
-  // Últimos 10 chamados
   const recentes = ch.slice(0, 10);
 
   const linhasRecentes = recentes.map(c => `
@@ -275,7 +293,7 @@ function exportRelatorioPDF() {
 function _downloadCSVRel(rows, filename) {
   const bom  = '\uFEFF';
   const csv  = bom + rows.map(r =>
-    r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')
+    r.map(v => `"${String(v).replace(/"/g, '""')}`).join(';')
   ).join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);

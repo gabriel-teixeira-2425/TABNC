@@ -87,7 +87,36 @@ function renderMetrics({ abertos, hoje, atrasados, criticos }) {
     </div>`;
 }
 
+// ─── Correção de distorção ao mudar zoom do browser ───────────────────────────
+// O zoom altera window.devicePixelRatio; detectamos via matchMedia e recriamos
+// os gráficos completamente (destroy + new Chart) para que o canvas seja
+// reinicializado com as dimensões e DPR corretos.
+let _dashZoomMql  = null;
+let _dashDataCache = [];
+
+function _watchDashZoom() {
+  // Remove listener anterior se existir
+  if (_dashZoomMql) {
+    try { _dashZoomMql.removeEventListener('change', _onDashZoom); } catch (_) {}
+  }
+  // Cria media query que dispara quando devicePixelRatio mudar
+  _dashZoomMql = window.matchMedia('(resolution: ' + window.devicePixelRatio + 'dppx)');
+  _dashZoomMql.addEventListener('change', _onDashZoom);
+}
+
+function _onDashZoom() {
+  // Destrói todos os charts do dashboard
+  ['status', 'prioridade', 'tendencia'].forEach(k => {
+    if (AppState.charts[k]) { AppState.charts[k].destroy(); AppState.charts[k] = null; }
+  });
+  // Recria com os dados em cache — sem nova chamada ao banco
+  if (_dashDataCache.length) renderCharts(_dashDataCache);
+}
+
 function renderCharts(chamados) {
+  // Guarda dados para poder recriar ao mudar zoom
+  _dashDataCache = chamados;
+
   if (AppState.charts.status)     AppState.charts.status.destroy();
   if (AppState.charts.prioridade) AppState.charts.prioridade.destroy();
   if (AppState.charts.tendencia)  AppState.charts.tendencia.destroy();
@@ -155,15 +184,9 @@ function renderCharts(chamados) {
       }
     }
   );
-  let resizeTimeout;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    if (AppState.charts.status) AppState.charts.status.resize();
-    if (AppState.charts.prioridade) AppState.charts.prioridade.resize();
-    if (AppState.charts.tendencia) AppState.charts.tendencia.resize();
-  }, 150);
-});
+
+  // Registra watcher de zoom após criar os gráficos
+  _watchDashZoom();
 }
 
 function renderRecentTable(chamados) {

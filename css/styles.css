@@ -671,7 +671,7 @@ body {
 .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .chart-title  { font-size: 13px; font-weight: 600; }
 .chart-sub    { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.chart-wrap   { position: relative; height: 200px; }
+.chart-wrap   { position: relative; height: 200px; overflow: hidden; }
 
 /* ── TABLE CARD ────────────────────────────────────────────── */
 .table-card {

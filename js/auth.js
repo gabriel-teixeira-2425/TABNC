@@ -92,6 +92,7 @@ async function doLogin() {
       throw new Error('Acesso negado. Usuário inativo ou não cadastrado como administrador.');
     }
 
+    await applyUserPrefs(email, 'funcionario');
     showApp();
     Notif.notify(
       `Bem-vindo, ${AppState.currentUser.nome}! Sessão iniciada com sucesso.`,
@@ -121,6 +122,7 @@ async function doLogout() {
   document.getElementById('app').style.display          = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 
+  resetThemeToDefault(); // volta ao tema escuro na tela de login
   Notif.clearAll();
   Notif.toast('Sessão encerrada.', 'info');
 }
@@ -161,8 +163,5 @@ function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   navigate('dashboard');
-
-  // CORRIGIDO: padrão 600000 (10 minutos), NÃO 60000 (1 minuto)
-  const savedInterval = parseInt(localStorage.getItem('pref_autorefresh') || '600000');
-  startAutoRefresh(savedInterval);
+  // Auto-refresh e tema já foram aplicados por applyUserPrefs() no login
 }

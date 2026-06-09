@@ -16,6 +16,7 @@ async function checkSessionUnificada() {
   // Tenta funcionário primeiro
   const okFunc = await loadUserProfile(email);
   if (okFunc) {
+    await applyUserPrefs(email, 'funcionario');
     showApp();
     return;
   }
@@ -23,6 +24,7 @@ async function checkSessionUnificada() {
   // Tenta cliente
   const okCli = await loadClienteProfile(email);
   if (okCli) {
+    await applyUserPrefs(email, 'cliente');
     showAppCliente();
     return;
   }
@@ -98,6 +100,7 @@ async function doLoginUnificado() {
         await db.auth.signOut();
         throw new Error('Acesso negado. E-mail não cadastrado como cliente.');
       }
+      await applyUserPrefs(email, 'cliente');
       showAppCliente();
       Notif.toast(`Bem-vindo, ${ClienteState.currentCliente.nome}!`, 'success', { title: 'Login realizado' });
     } else {
@@ -140,6 +143,7 @@ async function doLogoutCliente() {
   if (appCli)   appCli.style.display   = 'none';
   if (loginScr) loginScr.style.display = 'flex';
 
+  resetThemeToDefault(); // volta ao tema escuro na tela de login
   // Resetar seletor para funcionário
   selecionarTipoLogin('funcionario');
   Notif.toast('Sessão encerrada.', 'info');

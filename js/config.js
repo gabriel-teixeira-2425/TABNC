@@ -65,7 +65,7 @@ const AppState = {
   filteredChamados: [],
   currentChamado:   null,
   currentPage:      1,
-  pageSize:         parseInt(localStorage.getItem('pref_pagesize') || '15'),
+  pageSize:         15,
   sortField:        'data_abertura',
   sortAsc:          false,
   activePage:       'dashboard',
