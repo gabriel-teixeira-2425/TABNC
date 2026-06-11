@@ -122,8 +122,18 @@
         <div class="table-toolbar"><span class="table-toolbar-title">Chamados Recentes</span><button class="btn btn-ghost btn-sm" onclick="navigate('chamados')">Ver todos <span id="rec-arrow"></span></button></div>
         <div class="table-wrapper">
           <table>
-            <thead><tr><th>Protocolo</th><th>Assunto</th><th>Empresa / Cliente</th><th>Prioridade</th><th>Status</th><th>Abertura</th></tr></thead>
-            <tbody id="recent-tbody"><tr><td colspan="6" class="loading-cell"><span class="spinner"></span></td></tr></tbody>
+<thead>
+  <tr>
+    <th data-sort="protocolo" onclick="sortBy('protocolo')">Protocolo <span class="sort-icon" id="sort-protocolo"></span></th>
+    <th data-sort="assunto" onclick="sortBy('assunto')">Assunto <span class="sort-icon" id="sort-assunto"></span></th>
+    <th data-sort="empresa" onclick="sortBy('empresa')">Empresa <span class="sort-icon" id="sort-empresa"></span></th>
+    <th data-sort="prioridade_id" onclick="sortBy('prioridade_id')">Prioridade <span class="sort-icon" id="sort-prioridade_id"></span></th>
+    <th data-sort="status" onclick="sortBy('status')">Status <span class="sort-icon" id="sort-status"></span></th>
+    <th>Canal</th>  <!-- ← NOVA COLUNA AQUI -->
+    <th data-sort="data_abertura" onclick="sortBy('data_abertura')">Abertura <span class="sort-icon" id="sort-data_abertura"></span></th>
+    <th>SLA</th><th></th>
+  </tr>
+</thead>            <tbody id="recent-tbody"><tr><td colspan="6" class="loading-cell"><span class="spinner"></span></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -150,6 +160,7 @@
                 <th data-sort="empresa" onclick="sortBy('empresa')">Empresa <span class="sort-icon" id="sort-empresa"></span></th>
                 <th data-sort="prioridade_id" onclick="sortBy('prioridade_id')">Prioridade <span class="sort-icon" id="sort-prioridade_id"></span></th>
                 <th data-sort="status" onclick="sortBy('status')">Status <span class="sort-icon" id="sort-status"></span></th>
+                <th>Canal</th>
                 <th data-sort="data_abertura" onclick="sortBy('data_abertura')">Abertura <span class="sort-icon" id="sort-data_abertura"></span></th>
                 <th>SLA</th><th></th>
               </tr>

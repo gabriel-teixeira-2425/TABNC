@@ -7,9 +7,10 @@ function getCanalNome(canalId) {
   const canais = {
     1: 'WhatsApp',
     2: 'Email',
-    3: 'Microsoft Teams',
-    4: 'Formulário Web',
-    5: 'Portal do Cliente'
+    3: 'Teams',
+    4: 'Telefone',
+    5: 'Portal do Cliente',
+    6: 'Presencial'
   };
   return canais[canalId] || '—';
 }
